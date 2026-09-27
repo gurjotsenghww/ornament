@@ -188,6 +188,9 @@ def main():
     srv = subparsers.add_parser("serve", help="Launch Ornàment Web UI & API Server")
     srv.add_argument("--port", type=int, default=settings.port)
 
+    # chat
+    subparsers.add_parser("chat", help="Start interactive live terminal conversation with Qwen2.5-Coder-3B")
+
     args = parser.parse_args()
     if args.command == "telemetry":
         cmd_telemetry(args)
@@ -195,6 +198,9 @@ def main():
         from ornament.models.downloader import ModelDownloader
         path = ModelDownloader.download_model(args.model)
         console.print(f"[bold green][OK] Model ready at: {path}[/bold green]")
+    elif args.command == "chat":
+        from ornament.cli.chat import run_chat
+        run_chat()
     elif args.command == "generate":
         cmd_generate(args)
     elif args.command == "audit":

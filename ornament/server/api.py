@@ -314,6 +314,42 @@ def get_model_status():
         "vram_free_mb": tel.vram_free_mb
     }
 
+class ChatPayload(BaseModel):
+    message: str
+
+_llm_instance = None
+
+def get_local_llm():
+    global _llm_instance
+    if _llm_instance is None:
+        try:
+            from llama_cpp import Llama
+            weights = settings.base_dir / "ai-website-engineer-model" / "weights" / "qwen2.5-coder-3b-instruct-q4_k_m.gguf"
+            if not weights.exists():
+                return None
+            _llm_instance = Llama(model_path=str(weights), n_ctx=2048, n_threads=4, verbose=False)
+        except Exception as e:
+            return None
+    return _llm_instance
+
+@app.post("/api/model/chat")
+def chat_with_model(payload: ChatPayload):
+    llm = get_local_llm()
+    if not llm:
+        raise HTTPException(status_code=404, detail="Model weights not loaded or llama-cpp-python unavailable.")
+    
+    system_prompt = (
+        "You are Qwen2.5-Coder-3B, the autonomous AI website engineer in the Ornàment system. "
+        "You write production-quality, accessible, semantic HTML5, modern CSS, and TypeScript code. "
+        "Answer clearly, concisely, and helpfully."
+    )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": payload.message}
+    ]
+    res = llm.create_chat_completion(messages=messages, max_tokens=512, temperature=0.7)
+    return {"reply": res["choices"][0]["message"]["content"]}
+
 @app.post("/api/training-data/build")
 def build_datasets_endpoint(version: str = "dataset-v0.2"):
     from ornament.training_data.pipeline import TrainingDataPipeline
@@ -635,9 +671,67 @@ def index_page():
         <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Buttons: <strong>6</strong></span>
       </div>
     </div>
+
+    <!-- Live Chat Playground with Qwen2.5-Coder-3B -->
+    <div class="p-6 rounded-2xl bg-surface border border-surfaceBorder space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Live Chat Playground • Qwen2.5-Coder-3B</h3>
+        </div>
+        <span class="text-xs text-zinc-400 font-mono">Direct Local GGUF Inference • Zero Cloud API</span>
+      </div>
+      <div id="model-chat-history" class="p-4 rounded-xl bg-zinc-950 border border-zinc-900 min-h-[160px] max-h-[340px] overflow-y-auto space-y-3 text-xs">
+        <div class="p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300">
+          <strong class="text-indigo-400">Qwen2.5-Coder-3B:</strong> Hello! I am your local Ornàment AI website engineer running directly on your machine. You can talk to me, ask me to scaffold components, diagnose bugs, or write modern responsive CSS/HTML!
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <input id="model-chat-input" type="text" placeholder="e.g. Write an ultra-modern dark hero section with Tailwind CSS and stats badges..." class="flex-1 text-xs px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:border-indigo-500 font-sans" onkeydown="if(event.key === 'Enter') sendModelChat()" />
+        <button type="button" onclick="sendModelChat()" id="btn-send-chat" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center space-x-1.5">
+          <span>Send Message</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <script>
+    async function sendModelChat() {
+      const input = document.getElementById('model-chat-input');
+      const btn = document.getElementById('btn-send-chat');
+      const history = document.getElementById('model-chat-history');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const userDiv = document.createElement('div');
+      userDiv.className = 'p-3 rounded-lg bg-indigo-950/40 border border-indigo-900/60 text-indigo-200';
+      userDiv.innerHTML = `<strong class="text-white">You:</strong> \${text}`;
+      history.appendChild(userDiv);
+      input.value = '';
+      history.scrollTop = history.scrollHeight;
+
+      const botDiv = document.createElement('div');
+      botDiv.className = 'p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300';
+      botDiv.innerHTML = `<strong class="text-indigo-400">Qwen2.5-Coder-3B:</strong> <span class="text-indigo-300 animate-pulse">Thinking locally on RTX 3050...</span>`;
+      history.appendChild(botDiv);
+      history.scrollTop = history.scrollHeight;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/model/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        botDiv.innerHTML = `<strong class="text-indigo-400">Qwen2.5-Coder-3B:</strong> <div class="mt-1.5 whitespace-pre-wrap font-sans leading-relaxed">\${data.reply || data.detail}</div>`;
+      } catch (err) {
+        botDiv.innerHTML = `<strong class="text-rose-400">Error:</strong> \${err.message}`;
+      } finally {
+        btn.disabled = false;
+        history.scrollTop = history.scrollHeight;
+      }
+    }
     let currentType = 'portfolio';
 
     function selectType(type) {

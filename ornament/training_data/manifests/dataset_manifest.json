@@ -1,29 +1,31 @@
 {
-  "dataset_version": "dataset-v0.2",
-  "generation_date": "2026-09-27T05:36:07.030167+00:00",
+  "dataset_version": "dataset-v0.1",
+  "generation_date": "2026-09-27T05:46:46.029336+00:00",
   "sample_counts": {
-    "html": 328,
+    "html": 519,
     "css": 8,
-    "paired": 20,
-    "debugging": 100,
-    "total_validated": 456,
+    "paired": 2720,
+    "debugging": 2800,
+    "total_validated": 6047,
     "rejected_count": 0,
-    "duplicate_skips": 264
+    "duplicate_skips": 27073
   },
   "category_distribution": {
     "html": {
       "heroes": 27,
-      "cards": 58,
+      "cards": 82,
       "pricing": 6,
-      "forms": 57,
-      "portfolios": 38,
-      "complete_pages": 20,
+      "forms": 79,
+      "portfolios": 42,
+      "complete_pages": 23,
       "dashboards": 6,
-      "ecommerce": 28,
-      "footers": 28,
-      "tables": 27,
-      "accessibility": 27,
-      "buttons": 6
+      "ecommerce": 52,
+      "footers": 51,
+      "tables": 50,
+      "accessibility": 51,
+      "buttons": 6,
+      "sections": 21,
+      "contact": 23
     },
     "css": {
       "modern_css": 4,
@@ -33,10 +35,10 @@
       "buttons": 1
     },
     "paired": {
-      "paired": 20
+      "paired": 2720
     },
     "debugging": {
-      "debugging": 100
+      "debugging": 2800
     }
   },
   "license_distribution": {
