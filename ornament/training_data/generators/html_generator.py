@@ -241,12 +241,220 @@ def _build_portfolio(idx: int, domain: str, style: str, pal: Dict[str, str]) -> 
   <p>&copy; 2026 {name}. All rights reserved.</p>
 </footer>"""
 
+def _build_dashboard(idx: int, pal: Dict[str, str]) -> str:
+    return f"""<main class="min-h-screen {pal['bg']} text-zinc-100 p-6 md:p-10 space-y-8">
+  <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-zinc-800">
+    <div>
+      <h1 class="text-2xl font-black text-white tracking-tight">Autonomous Cluster Telemetry</h1>
+      <p class="text-xs text-zinc-400 mt-1">Real-time hardware saturation and agent dispatch queue.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/40 text-emerald-400 border border-emerald-800/60">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>VRAM Safe: 3.85 GB / 6.0 GB</span>
+      </span>
+      <button class="px-4 py-2 rounded-xl {pal['btn']} text-xs font-bold shadow-md">Deploy Adapter</button>
+    </div>
+  </header>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="p-6 rounded-2xl {pal['card']}">
+      <span class="text-xs font-mono text-zinc-400">Total Validated Samples</span>
+      <div class="text-3xl font-black text-white mt-2">15,420</div>
+      <div class="mt-4 flex items-center text-xs {pal['accent']}"><span>+18.4%</span><span class="text-zinc-500 ml-1.5">vs previous iteration</span></div>
+    </div>
+    <div class="p-6 rounded-2xl {pal['card']}">
+      <span class="text-xs font-mono text-zinc-400">Self-Healing Pass Rate</span>
+      <div class="text-3xl font-black text-emerald-400 mt-2">100%</div>
+      <div class="mt-4 text-xs text-zinc-500">21 of 21 test suites passing</div>
+    </div>
+    <div class="p-6 rounded-2xl {pal['card']}">
+      <span class="text-xs font-mono text-zinc-400">Inference Latency</span>
+      <div class="text-3xl font-black text-white mt-2">48 ms</div>
+      <div class="mt-4 text-xs text-zinc-500">Local RTX 3050 Tensor Cores</div>
+    </div>
+    <div class="p-6 rounded-2xl {pal['card']}">
+      <span class="text-xs font-mono text-zinc-400">Deduplication Ratio</span>
+      <div class="text-3xl font-black text-cyan-400 mt-2">3.2x</div>
+      <div class="mt-4 text-xs text-zinc-500">179 duplicates skipped</div>
+    </div>
+  </div>
+</main>"""
+
+def _build_ecommerce(idx: int, pal: Dict[str, str]) -> str:
+    return f"""<section class="py-16 {pal['bg']} text-zinc-100">
+  <div class="max-w-7xl mx-auto px-6 space-y-10">
+    <div class="flex items-end justify-between border-b border-zinc-800 pb-4">
+      <div>
+        <span class="text-xs font-mono {pal['accent']} uppercase tracking-widest">Hardware Catalog</span>
+        <h2 class="text-3xl font-extrabold text-white mt-1">Autonomous Edge Compute Modules</h2>
+      </div>
+      <a href="/catalog" class="text-xs font-semibold text-zinc-400 hover:text-white transition">View All Products &rarr;</a>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <article class="p-5 rounded-2xl {pal['card']} flex flex-col justify-between group">
+        <div>
+          <div class="w-full h-44 rounded-xl bg-zinc-800/80 mb-4 flex items-center justify-center text-zinc-600 font-mono text-xs">
+            [High-Density Edge Node v{idx + 1}]
+          </div>
+          <div class="flex items-center justify-between text-xs text-zinc-400 mb-1">
+            <span class="{pal['accent']}">Verified Hardware</span>
+            <span>4C / 8T • 6GB VRAM</span>
+          </div>
+          <h3 class="text-lg font-bold text-white group-hover:text-indigo-400 transition">Ornàment Edge Node Pro</h3>
+          <p class="text-xs text-zinc-400 mt-2 leading-relaxed">Dedicated local neural inference workstation engineered for deterministic Playwright browser testing.</p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-zinc-800/80 flex items-center justify-between">
+          <div class="text-xl font-black text-white">$1,299</div>
+          <button class="px-4 py-2 rounded-xl {pal['btn']} text-xs font-bold shadow-md">Add to Cart</button>
+        </div>
+      </article>
+      <article class="p-5 rounded-2xl {pal['card']} flex flex-col justify-between group">
+        <div>
+          <div class="w-full h-44 rounded-xl bg-zinc-800/80 mb-4 flex items-center justify-center text-zinc-600 font-mono text-xs">
+            [Thermal Accelerator Module]
+          </div>
+          <div class="flex items-center justify-between text-xs text-zinc-400 mb-1">
+            <span class="{pal['accent']}">Thermal Guard</span>
+            <span>Zero-Throttle Cryo</span>
+          </div>
+          <h3 class="text-lg font-bold text-white group-hover:text-indigo-400 transition">CryoShield GPU Coolant Plate</h3>
+          <p class="text-xs text-zinc-400 mt-2 leading-relaxed">Precision vapor chamber cooling block maintaining continuous 65°C under sustained LoRA fine-tuning.</p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-zinc-800/80 flex items-center justify-between">
+          <div class="text-xl font-black text-white">$149</div>
+          <button class="px-4 py-2 rounded-xl {pal['btn']} text-xs font-bold shadow-md">Add to Cart</button>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>"""
+
+def _build_footer(idx: int, pal: Dict[str, str]) -> str:
+    return f"""<footer class="border-t border-zinc-800/80 bg-zinc-950 text-zinc-400 py-16">
+  <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
+    <div class="space-y-3 col-span-2 md:col-span-1">
+      <span class="text-lg font-extrabold text-white">Ornàment<span class="{pal['accent']}">.dev</span></span>
+      <p class="text-xs text-zinc-500 leading-relaxed">Autonomous AI Website Engineer with deterministic verification, hardware-bound concurrency, and minimal change policy.</p>
+    </div>
+    <div>
+      <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-3">Architecture</h3>
+      <ul class="space-y-2 text-xs">
+        <li><a href="/specs" class="hover:text-white transition">Agent Hierarchy</a></li>
+        <li><a href="/testing" class="hover:text-white transition">7-Level Test Suite</a></li>
+        <li><a href="/sandbox" class="hover:text-white transition">Safe Sandbox Files</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-3">Model Engine</h3>
+      <ul class="space-y-2 text-xs">
+        <li><a href="/models" class="hover:text-white transition">Qwen2.5-Coder 3B</a></li>
+        <li><a href="/lora" class="hover:text-white transition">4-bit QLoRA Pipeline</a></li>
+        <li><a href="/training-data" class="hover:text-white transition">Instruction Datasets</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-3">Subscribe</h3>
+      <form class="space-y-2">
+        <label for="footer-email-{idx}" class="sr-only">Work Email</label>
+        <input id="footer-email-{idx}" type="email" placeholder="dev@company.com" required class="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-white" />
+        <button type="submit" class="w-full py-2 rounded-lg {pal['btn']} text-xs font-bold">Stay Updated</button>
+      </form>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-zinc-900 flex flex-col md:flex-row items-center justify-between text-xs text-zinc-600 gap-4">
+    <p>&copy; 2026 Ornàment Engineering Platform. Open-source under MIT License.</p>
+    <div class="flex space-x-6">
+      <a href="/privacy" class="hover:text-zinc-400">Privacy Policy</a>
+      <a href="/terms" class="hover:text-zinc-400">Terms of Service</a>
+      <a href="/security" class="hover:text-zinc-400">Security Architecture</a>
+    </div>
+  </div>
+</footer>"""
+
+def _build_tables(idx: int, pal: Dict[str, str]) -> str:
+    return f"""<section class="py-12 {pal['bg']} text-zinc-100">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="overflow-x-auto rounded-2xl {pal['card']} border border-zinc-800">
+      <table class="w-full text-left text-xs">
+        <caption class="p-5 font-bold text-sm text-white border-b border-zinc-800 text-left">
+          Multi-Level Verification Harness Log • Commit #{idx + 100}
+        </caption>
+        <thead class="bg-zinc-950/60 uppercase font-mono text-zinc-400 border-b border-zinc-800">
+          <tr>
+            <th scope="col" class="py-3.5 px-6">Test Tier</th>
+            <th scope="col" class="py-3.5 px-6">Target Component</th>
+            <th scope="col" class="py-3.5 px-6">Execution Latency</th>
+            <th scope="col" class="py-3.5 px-6">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-800/60">
+          <tr class="hover:bg-zinc-800/30 transition">
+            <td class="py-3.5 px-6 font-semibold text-white">Level 1 Static Analysis</td>
+            <td class="py-3.5 px-6 text-zinc-400">app/page.tsx, components/Navbar.tsx</td>
+            <td class="py-3.5 px-6 font-mono text-zinc-400">12 ms</td>
+            <td class="py-3.5 px-6"><span class="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 font-bold border border-emerald-800/60">[PASS]</span></td>
+          </tr>
+          <tr class="hover:bg-zinc-800/30 transition">
+            <td class="py-3.5 px-6 font-semibold text-white">Level 4 Browser Functional</td>
+            <td class="py-3.5 px-6 text-zinc-400">#nav-contact-button -> /contact route</td>
+            <td class="py-3.5 px-6 font-mono text-zinc-400">114 ms</td>
+            <td class="py-3.5 px-6"><span class="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 font-bold border border-emerald-800/60">[PASS]</span></td>
+          </tr>
+          <tr class="hover:bg-zinc-800/30 transition">
+            <td class="py-3.5 px-6 font-semibold text-white">Level 7 WCAG A11y Audit</td>
+            <td class="py-3.5 px-6 text-zinc-400">Color Contrast & Form Labels</td>
+            <td class="py-3.5 px-6 font-mono text-zinc-400">45 ms</td>
+            <td class="py-3.5 px-6"><span class="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 font-bold border border-emerald-800/60">[PASS]</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>"""
+
+def _build_accessibility(idx: int, pal: Dict[str, str]) -> str:
+    return f"""<section aria-labelledby="a11y-heading-{idx}" class="py-12 {pal['bg']} text-zinc-100">
+  <div class="max-w-4xl mx-auto px-6 space-y-6">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:p-3 focus:bg-indigo-600 focus:text-white rounded-lg">Skip to main content</a>
+    <div class="p-8 rounded-2xl {pal['card']} space-y-4">
+      <div class="flex items-center space-x-2 text-xs font-mono {pal['accent']}">
+        <span class="w-2.5 h-2.5 rounded-full bg-current"></span>
+        <span>WCAG 2.1 AAA High-Contrast Landmark</span>
+      </div>
+      <h2 id="a11y-heading-{idx}" class="text-2xl font-black text-white">Accessible Keyboard Navigation Module</h2>
+      <p class="text-sm text-zinc-300 leading-relaxed">
+        Engineered with explicit aria-live status regions, keyboard focus indicators (outline-offset-2), and high-contrast color ratios exceeding 7.0:1.
+      </p>
+      <div role="region" aria-live="polite" class="p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-300">
+        <span class="font-bold text-white">Screen Reader Announcement:</span> Active focus safely bounded in sandboxed DOM environment.
+      </div>
+      <div class="flex space-x-4 pt-2">
+        <button class="px-5 py-2.5 rounded-xl {pal['btn']} text-xs font-bold focus:ring-2 focus:ring-white focus:outline-none">Accessible Action</button>
+        <button class="px-5 py-2.5 rounded-xl bg-zinc-800 text-zinc-200 text-xs font-semibold hover:bg-zinc-700 focus:ring-2 focus:ring-white focus:outline-none">Dismiss Notice</button>
+      </div>
+    </div>
+  </div>
+</section>"""
+
+def _build_buttons(idx: int, pal: Dict[str, str]) -> str:
+    return f"""<section class="py-12 {pal['bg']} text-zinc-100">
+  <div class="max-w-3xl mx-auto px-6 p-8 rounded-2xl {pal['card']} space-y-6">
+    <h2 class="text-xl font-bold text-white">Interactive Button Component States</h2>
+    <div class="flex flex-wrap items-center gap-4">
+      <button type="button" class="px-5 py-2.5 rounded-xl {pal['btn']} text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition">Primary Action</button>
+      <button type="button" class="px-5 py-2.5 rounded-xl bg-zinc-800 text-zinc-200 text-xs font-semibold hover:bg-zinc-700 active:scale-95 transition">Secondary Action</button>
+      <button type="button" class="px-5 py-2.5 rounded-xl bg-rose-600/20 text-rose-300 border border-rose-600/40 text-xs font-semibold hover:bg-rose-600/30 transition">Destructive Rollback</button>
+      <button type="button" disabled class="px-5 py-2.5 rounded-xl bg-zinc-900 text-zinc-600 cursor-not-allowed text-xs font-medium border border-zinc-800">Disabled State</button>
+    </div>
+  </div>
+</section>"""
+
 def generate_html(count: int, categories: List[str] = None) -> List[Dict[str, Any]]:
     """
     Generates 'count' high-quality, production-grade HTML examples across categories.
     """
     if not categories:
-        categories = ["heroes", "cards", "pricing", "forms", "portfolios", "complete_pages"]
+        categories = ["heroes", "cards", "pricing", "forms", "portfolios", "complete_pages", "dashboards", "ecommerce", "footers", "tables", "accessibility", "buttons"]
 
     domains = ["developer", "designer", "founder", "photographer", "creative", "product_manager", "three_d", "agency"]
     styles = ["minimal", "modern", "premium", "luxury", "dark", "light", "futuristic", "editorial", "brutalist", "creative"]
@@ -264,12 +472,30 @@ def generate_html(count: int, categories: List[str] = None) -> List[Dict[str, An
         elif cat in ["cards", "sections"]:
             code = _build_cards(i, pal)
             desc = f"Responsive 3-column feature card grid with {pal['name']} theme"
-        elif cat in ["pricing", "tables"]:
+        elif cat in ["pricing"]:
             code = _build_pricing(i, pal)
             desc = f"Tiered pricing matrix with recommended badges and {pal['name']} theme"
         elif cat in ["forms", "contact"]:
             code = _build_form(i, pal)
             desc = f"Accessible contact request form with validation styling"
+        elif cat in ["dashboards"]:
+            code = _build_dashboard(i, pal)
+            desc = f"Bento metric telemetry dashboard in {pal['name']} style"
+        elif cat in ["ecommerce"]:
+            code = _build_ecommerce(i, pal)
+            desc = f"Hardware e-commerce product showcase grid with {pal['name']} theme"
+        elif cat in ["footers"]:
+            code = _build_footer(i, pal)
+            desc = f"Comprehensive 4-column footer with newsletter and legal navigation"
+        elif cat in ["tables"]:
+            code = _build_tables(i, pal)
+            desc = f"Accessible data table with scope attributes and zebra striping"
+        elif cat in ["accessibility"]:
+            code = _build_accessibility(i, pal)
+            desc = f"High-contrast WCAG 2.1 AAA accessible component with aria-live"
+        elif cat in ["buttons"]:
+            code = _build_buttons(i, pal)
+            desc = f"Interactive button state gallery with primary, secondary, and disabled styles"
         elif cat in ["portfolios", "complete_pages"]:
             code = _build_portfolio(i, dom, sty, pal)
             desc = f"Complete {sty} portfolio for {dom} with selected works and navigation"

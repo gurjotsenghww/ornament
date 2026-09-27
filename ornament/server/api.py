@@ -289,6 +289,37 @@ async def run_repair(
 def get_agents():
     return shared_agent_manager.get_agent_tree()
 
+@app.get("/api/training-data/stats")
+def get_training_stats():
+    from ornament.training_data.storage.example_store import ExampleStore
+    store = ExampleStore(settings.base_dir / "ornament" / "training_data")
+    return store.get_stats()
+
+@app.get("/api/model/status")
+def get_model_status():
+    from ornament.hardware.monitor import HardwareManager
+    weights_path = settings.base_dir / "ai-website-engineer-model" / "weights" / "qwen2.5-coder-3b-instruct-q4_k_m.gguf"
+    exists = weights_path.exists()
+    size_mb = (weights_path.stat().st_size / (1024 * 1024)) if exists else 0
+    tel = HardwareManager.get_system_telemetry()
+    return {
+        "model_name": "Qwen2.5-Coder-3B-Instruct",
+        "format": "GGUF Q4_K_M",
+        "weights_ready": exists,
+        "weights_size_mb": round(size_mb, 1),
+        "weights_path": str(weights_path),
+        "lora_config": "ai-website-engineer-model/configs/lora_config_3b.json",
+        "gpu": tel.gpu_name if tel.gpu_available else "CPU",
+        "vram_total_mb": tel.vram_total_mb,
+        "vram_free_mb": tel.vram_free_mb
+    }
+
+@app.post("/api/training-data/build")
+def build_datasets_endpoint(version: str = "dataset-v0.2"):
+    from ornament.training_data.pipeline import TrainingDataPipeline
+    pipeline = TrainingDataPipeline()
+    return pipeline.build_datasets(version=version)
+
 @app.get("/", response_class=HTMLResponse)
 def index_page():
     return """<!DOCTYPE html>
@@ -320,9 +351,15 @@ def index_page():
 <body class="min-h-screen flex flex-col">
   <!-- Top Navigation -->
   <header class="border-b border-surfaceBorder bg-surface px-6 py-4 flex items-center justify-between">
-    <div class="flex items-center space-x-3">
-      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-white text-lg">O</div>
-      <span class="text-xl font-bold tracking-tight">Ornàment <span class="text-xs text-indigo-400 font-mono px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">AI Website Engineer v0.1</span></span>
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-white text-lg">O</div>
+        <span class="text-xl font-bold tracking-tight">Ornàment <span class="text-xs text-indigo-400 font-mono px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">AI Website Engineer v0.1</span></span>
+      </div>
+      <div class="flex items-center space-x-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800 text-xs">
+        <button id="tab-btn-studio" onclick="switchView('studio')" class="px-3 py-1 rounded bg-indigo-600 font-bold text-white shadow transition">⚡ Prompt Studio</button>
+        <button id="tab-btn-model" onclick="switchView('model')" class="px-3 py-1 rounded text-zinc-400 hover:text-white font-medium transition">🧠 Model & Training Hub</button>
+      </div>
     </div>
     <div id="telemetry-bar" class="text-xs font-mono text-zinc-400 flex items-center space-x-4">
       <span>CPU: <strong id="cpu-stat" class="text-zinc-200">--%</strong></span>
@@ -332,8 +369,8 @@ def index_page():
     </div>
   </header>
 
-  <!-- Main Grid -->
-  <main class="flex-1 grid grid-cols-12 gap-4 p-6">
+  <!-- Main Grid: Prompt Studio -->
+  <main id="view-studio" class="flex-1 grid grid-cols-12 gap-4 p-6">
     <!-- Left Panel: Prompt Studio, Tools & Agent Tree -->
     <div class="col-span-4 space-y-4">
       <!-- Prompt Studio Box -->
@@ -495,6 +532,110 @@ def index_page():
       </div>
     </div>
   </main>
+
+  <!-- AI Model & Training Hub View -->
+  <div id="view-model" class="flex-1 hidden p-8 max-w-7xl mx-auto w-full space-y-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-surfaceBorder gap-4">
+      <div>
+        <h1 class="text-2xl font-black text-white tracking-tight">AI Model & Training Hub</h1>
+        <p class="text-xs text-zinc-400 mt-1">Supervise local neural weights, instruction-tuning datasets, and hardware limits.</p>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button type="button" onclick="recompileDatasets()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center space-x-1.5">
+          <span>⚡ Recompile JSONL Splits</span>
+        </button>
+        <button type="button" onclick="loadModelView()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs border border-zinc-700 transition">
+          <span>↻ Refresh Telemetry</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3-Column Overview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Card 1: Model Architecture -->
+      <div class="p-6 rounded-2xl bg-surface border border-surfaceBorder space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-mono text-zinc-400 uppercase tracking-wider">Active Base Model</span>
+          <span id="model-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">READY ON DISK</span>
+        </div>
+        <div>
+          <div class="text-xl font-black text-white" id="model-title">Qwen2.5-Coder-3B</div>
+          <div class="text-xs text-indigo-400 font-mono mt-0.5" id="model-file">qwen2.5-coder-3b-instruct-q4_k_m.gguf</div>
+        </div>
+        <div class="pt-2 border-t border-zinc-800 space-y-2 text-xs text-zinc-300">
+          <div class="flex justify-between"><span class="text-zinc-500">Weight File Size:</span><span id="model-size" class="font-mono text-white">2,007.4 MB (~1.96 GB)</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Quantization:</span><span class="font-mono text-emerald-400">4-bit GGUF (Q4_K_M)</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Fine-Tuning Architecture:</span><span class="font-mono text-indigo-300">QLoRA (Rank 16, Alpha 32)</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Hardware Profile:</span><span id="model-gpu" class="font-mono text-zinc-300">RTX 3050 Laptop (6GB VRAM)</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Training VRAM Footprint:</span><span class="font-mono text-emerald-300">~3.85 GB / 6.0 GB [Safe]</span></div>
+        </div>
+      </div>
+
+      <!-- Card 2: Training Data Store -->
+      <div class="p-6 rounded-2xl bg-surface border border-surfaceBorder space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-mono text-zinc-400 uppercase tracking-wider">Validated Data Lake</span>
+          <span id="model-val-total" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">456 VALIDATED</span>
+        </div>
+        <div>
+          <div class="text-3xl font-black text-white" id="model-val-count">456</div>
+          <div class="text-xs text-zinc-400 mt-0.5">Production-grade verified examples</div>
+        </div>
+        <div class="pt-2 border-t border-zinc-800 space-y-2 text-xs text-zinc-300">
+          <div class="flex justify-between"><span class="text-zinc-500">HTML Components:</span><span id="model-html-count" class="font-mono text-white">328</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">CSS Stylesheets:</span><span id="model-css-count" class="font-mono text-white">8</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Debugging Trajectories:</span><span id="model-dbg-count" class="font-mono text-white">100</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Paired Multi-Scale Sites:</span><span id="model-pair-count" class="font-mono text-white">20</span></div>
+          <div class="flex justify-between"><span class="text-zinc-500">Duplicates Filtered:</span><span id="model-dup-count" class="font-mono text-cyan-400">264 skipped</span></div>
+        </div>
+      </div>
+
+      <!-- Card 3: Compiled JSONL Datasets -->
+      <div class="p-6 rounded-2xl bg-surface border border-surfaceBorder space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-mono text-zinc-400 uppercase tracking-wider">Instruction Datasets</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">80/10/10 ISOLATION</span>
+        </div>
+        <div class="space-y-3 pt-2 text-xs">
+          <div class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
+            <div class="font-bold text-white flex justify-between"><span>html_train.jsonl</span><span class="text-indigo-400 font-mono">264 samples</span></div>
+            <div class="text-[11px] text-zinc-500 mt-0.5">80% train partition with strict test isolation</div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
+            <div class="font-bold text-white flex justify-between"><span>debugging_train.jsonl</span><span class="text-indigo-400 font-mono">81 samples</span></div>
+            <div class="text-[11px] text-zinc-500 mt-0.5">Autonomous self-healing minimal diff trajectories</div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
+            <div class="font-bold text-white flex justify-between"><span>portfolio_train.jsonl</span><span class="text-indigo-400 font-mono">58 samples</span></div>
+            <div class="text-[11px] text-zinc-500 mt-0.5">8 domains across 10 modern aesthetic styles</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Coverage Matrix -->
+    <div class="p-6 rounded-2xl bg-surface border border-surfaceBorder space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Dataset Category Distribution (Sections 5 & 6)</h3>
+        <span class="text-xs text-zinc-400 font-mono">20 Total Categories Targeted</span>
+      </div>
+      <div id="category-badges" class="flex flex-wrap gap-2 pt-2">
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Cards: <strong>58</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Forms: <strong>57</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Portfolios: <strong>38</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Ecommerce: <strong>28</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Footers: <strong>28</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Heroes: <strong>27</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Tables: <strong>27</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Accessibility: <strong>27</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Complete Pages: <strong>20</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Debugging: <strong>100</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Pricing: <strong>6</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Dashboards: <strong>6</strong></span>
+        <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">Buttons: <strong>6</strong></span>
+      </div>
+    </div>
+  </div>
 
   <script>
     let currentType = 'portfolio';
@@ -714,6 +855,82 @@ def index_page():
     function refreshPreview() {
       const frame = document.getElementById('preview-frame');
       frame.src = frame.src;
+    }
+
+    function switchView(view) {
+      const studio = document.getElementById('view-studio');
+      const model = document.getElementById('view-model');
+      const btnStudio = document.getElementById('tab-btn-studio');
+      const btnModel = document.getElementById('tab-btn-model');
+
+      if (view === 'studio') {
+        studio.classList.remove('hidden');
+        model.classList.add('hidden');
+        btnStudio.className = 'px-3 py-1 rounded bg-indigo-600 font-bold text-white shadow transition';
+        btnModel.className = 'px-3 py-1 rounded text-zinc-400 hover:text-white font-medium transition';
+      } else {
+        studio.classList.add('hidden');
+        model.classList.remove('hidden');
+        btnStudio.className = 'px-3 py-1 rounded text-zinc-400 hover:text-white font-medium transition';
+        btnModel.className = 'px-3 py-1 rounded bg-indigo-600 font-bold text-white shadow transition';
+        loadModelView();
+      }
+    }
+
+    async function loadModelView() {
+      try {
+        const [mRes, sRes] = await Promise.all([
+          fetch('/api/model/status'),
+          fetch('/api/training-data/stats')
+        ]);
+        const mData = await mRes.json();
+        const sData = await sRes.json();
+
+        // Model Architecture
+        document.getElementById('model-title').textContent = mData.model_name;
+        document.getElementById('model-file').textContent = mData.weights_path.split('\\\\').pop().split('/').pop();
+        document.getElementById('model-size').textContent = `${mData.weights_size_mb} MB (~${(mData.weights_size_mb / 1024).toFixed(2)} GB)`;
+        document.getElementById('model-gpu').textContent = `${mData.gpu} (${(mData.vram_total_mb / 1024).toFixed(1)} GB VRAM)`;
+        
+        // Data Lake
+        const counts = sData.counts || {};
+        document.getElementById('model-val-total').textContent = `${counts.validated || 0} VALIDATED`;
+        document.getElementById('model-val-count').textContent = counts.validated || 0;
+        document.getElementById('model-html-count').textContent = counts.html || 0;
+        document.getElementById('model-css-count').textContent = counts.css || 0;
+        document.getElementById('model-dbg-count').textContent = counts.debugging || 0;
+        document.getElementById('model-pair-count').textContent = counts.paired || 0;
+        document.getElementById('model-dup-count').textContent = `${sData.duplicate_skips || 0} skipped`;
+
+        // Category Badges
+        const catMap = sData.category_counts || {};
+        const badgesContainer = document.getElementById('category-badges');
+        badgesContainer.innerHTML = '';
+        for (const [lang, cats] of Object.entries(catMap)) {
+          for (const [cat, num] of Object.entries(cats)) {
+            const badge = document.createElement('span');
+            badge.className = 'px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300';
+            badge.innerHTML = `${cat}: <strong class="text-white">${num}</strong>`;
+            badgesContainer.appendChild(badge);
+          }
+        }
+      } catch (err) {
+        console.error('Failed loading model view metrics:', err);
+      }
+    }
+
+    async function recompileDatasets() {
+      try {
+        const btn = event.target;
+        btn.textContent = 'Compiling...';
+        const res = await fetch('/api/training-data/build', { method: 'POST' });
+        const data = await res.json();
+        alert(`Compilation Complete: ${data.version}\\nHTML Splits: ${JSON.stringify(data.datasets.datasets_created.html)}\\nDebugging Splits: ${JSON.stringify(data.datasets.datasets_created.debugging)}`);
+        btn.textContent = '⚡ Recompile JSONL Splits';
+        loadModelView();
+      } catch (err) {
+        alert('Recompilation error: ' + err);
+      }
     }
 
     // Initial load

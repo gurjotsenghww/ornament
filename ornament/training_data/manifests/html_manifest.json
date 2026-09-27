@@ -1,14 +1,20 @@
 {
-  "dataset_version": "dataset-v0.1",
+  "dataset_version": "dataset-v0.2",
   "language": "html",
-  "count": 113,
+  "count": 328,
   "categories": {
-    "heroes": 5,
-    "cards": 34,
-    "pricing": 1,
-    "forms": 33,
-    "portfolios": 20,
-    "complete_pages": 20
+    "heroes": 27,
+    "cards": 58,
+    "pricing": 6,
+    "forms": 57,
+    "portfolios": 38,
+    "complete_pages": 20,
+    "dashboards": 6,
+    "ecommerce": 28,
+    "footers": 28,
+    "tables": 27,
+    "accessibility": 27,
+    "buttons": 6
   },
-  "generated_at": "2026-09-27T05:10:35.391111+00:00"
+  "generated_at": "2026-09-27T05:36:07.031185+00:00"
 }
