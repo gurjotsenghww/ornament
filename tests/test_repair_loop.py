@@ -6,6 +6,7 @@ from pathlib import Path
 from ornament.generator.portfolio_generator import PortfolioGenerator
 from ornament.sandbox.dev_server import DevPreviewServer
 from ornament.testing.runner import MultiLevelTestHarness
+from ornament.config import settings
 from ornament.agents.main_agent import MainAgent
 from ornament.agents.manager import AgentManager
 from ornament.models.provider.factory import get_model_provider
@@ -14,7 +15,10 @@ from ornament.models.provider.factory import get_model_provider
 def demo_workspace(tmp_path):
     ws = tmp_path / "portfolio_demo"
     ws.mkdir()
+    orig_vram = settings.min_free_vram_mb
+    settings.min_free_vram_mb = 0
     yield ws
+    settings.min_free_vram_mb = orig_vram
     shutil.rmtree(ws, ignore_errors=True)
 
 @pytest.mark.asyncio

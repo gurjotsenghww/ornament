@@ -1,0 +1,11 @@
+# Ornàment AI Website Engineer — Training & LoRA Dependencies
+# Compatible with Google Colab (Tesla T4), Local GPU, and Cloud Clusters
+transformers>=4.45.0
+peft>=0.13.0
+accelerate>=0.34.0
+bitsandbytes>=0.44.0
+datasets>=2.21.0
+pyyaml>=6.0.1
+sentencepiece>=0.2.0
+protobuf>=4.25.0
+rich>=13.7.0

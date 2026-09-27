@@ -1,0 +1,44 @@
+# Ornàment Cloud & Local Training Configuration
+# Compatible across Local RTX 3050/4050, Google Colab Tesla T4, and Enterprise A100
+
+model:
+  model_name: "Qwen/Qwen2.5-Coder-3B-Instruct"
+  precision: "4bit"       # 4bit (QLoRA NF4), 8bit, fp16, bf16
+  device: "auto"          # auto, cuda, cpu
+  context_length: 1280    # 1280 for 6GB VRAM, 2048 for T4 16GB, 4096+ for A100
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+training:
+  batch_size: 1
+  gradient_accumulation_steps: 16
+  learning_rate: 0.0002
+  num_epochs: 2
+  max_steps: -1           # -1 for full training, or positive integer for sanity testing
+  warmup_ratio: 0.03
+  max_grad_norm: 0.3
+  optim: "paged_adamw_8bit"
+  logging_steps: 10
+  save_strategy: "steps"
+  save_steps: 20
+  eval_strategy: "no"
+  gradient_checkpointing: true
+
+paths:
+  dataset_path: "ai-website-engineer-model/datasets/ornament_master_train.jsonl"
+  val_dataset_path: "ai-website-engineer-model/datasets/ornament_master_val.jsonl"
+  checkpoint_path: ""     # Leave empty or set to "latest" / path to resume
+  output_path: "ai-website-engineer-model/adapters/v0.1.0"

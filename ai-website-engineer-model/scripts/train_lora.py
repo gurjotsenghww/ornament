@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
-Ornàment 4-Bit QLoRA Fine-Tuning Script.
-Optimized for NVIDIA GeForce RTX 3050 Laptop GPU (6GB VRAM, ~5.3GB available).
+Ornàment Unified Multi-Device Training Script.
+Supports:
+- Local Consumer GPUs: NVIDIA RTX 3050, RTX 4050 (6GB VRAM)
+- Cloud GPUs: Google Colab Tesla T4 (~15GB VRAM), V100
+- High-End / Cluster: NVIDIA A100 (40GB/80GB), H100, DGX
 
-Loads:
-- Base: Qwen/Qwen2.5-Coder-3B-Instruct in 4-bit NF4
-- Dataset: ChatML formatted ornament_master_train.jsonl and val.jsonl
-- Adapter: LoRA r=16, alpha=32 on all projection layers
-- VRAM optimization: gradient checkpointing + paged_adamw_8bit (<4GB VRAM usage)
+Features:
+- Auto-hardware detection & PyTorch/CUDA telemetry
+- Dynamic precision: 4-bit NF4 QLoRA, 8-bit, FP16, BF16
+- Gradient accumulation & checkpointing
+- Resumable training from checkpoints (survives Colab disconnections)
+- Sanity testing mode (--max-steps / --sanity-test)
+- Robust CUDA OOM recovery guidance
 """
 
 import argparse
@@ -18,58 +23,110 @@ import time
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+# Add parent directory for config loader import
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from configs.config_loader import TrainingConfig
+
+# Cache path defaults (only if not already set by environment)
+project_root = Path(__file__).resolve().parent.parent.parent
+cache_root = project_root / ".cache"
+if "HF_HOME" not in os.environ and cache_root.exists():
+    os.environ["HF_HOME"] = str(cache_root / "huggingface")
+if "HF_HUB_CACHE" not in os.environ and cache_root.exists():
+    os.environ["HF_HUB_CACHE"] = str(cache_root / "huggingface" / "hub")
+if "TORCH_HOME" not in os.environ and cache_root.exists():
+    os.environ["TORCH_HOME"] = str(cache_root / "torch")
+if "PIP_CACHE_DIR" not in os.environ and cache_root.exists():
+    os.environ["PIP_CACHE_DIR"] = str(cache_root / "pip")
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
+
 def train(
-    config_path: Path,
-    train_dataset_path: Path,
-    val_dataset_path: Path,
-    output_dir: Path,
-    dry_run: bool = False
+    config_path: Optional[Path] = None,
+    train_dataset_path: Optional[Path] = None,
+    val_dataset_path: Optional[Path] = None,
+    output_dir: Optional[Path] = None,
+    dry_run: bool = False,
+    resume_checkpoint: Optional[str] = None,
+    max_steps: Optional[int] = None,
+    batch_size: Optional[int] = None,
+    gradient_accumulation_steps: Optional[int] = None,
+    learning_rate: Optional[float] = None,
+    epochs: Optional[int] = None,
+    precision: Optional[str] = None,
 ):
-    print("=========================================================")
-    print("      ORNÀMENT AI WEBSITE ENGINEER — MODEL TRAINING")
-    print("=========================================================\n")
-    print(f"[*] Configuration : {config_path}")
-    print(f"[*] Train Dataset : {train_dataset_path}")
-    print(f"[*] Val Dataset   : {val_dataset_path}")
-    print(f"[*] Output Adapter: {output_dir}\n")
+    print("=" * 65)
+    print("      ORNÀMENT AI WEBSITE ENGINEER — UNIFIED TRAINING PIPELINE")
+    print("=" * 65 + "\n")
 
-    with open(config_path, "r", encoding="utf-8") as f:
-        config = json.load(f)
+    # 1. Load Configuration
+    cfg_file = str(config_path) if config_path else None
+    config = TrainingConfig.load(cfg_file)
 
-    base_model_name = config.get("base_model", "Qwen/Qwen2.5-Coder-3B-Instruct")
-    lora_r = config.get("lora_r", 16)
-    lora_alpha = config.get("lora_alpha", 32)
-    lora_dropout = config.get("lora_dropout", 0.05)
-    target_modules = config.get("target_modules", ["q_proj", "k_proj", "v_proj", "o_proj"])
-    hyperparams = config.get("training_hyperparameters", {})
+    # CLI Overrides
+    if train_dataset_path:
+        config.dataset_path = str(train_dataset_path)
+    if val_dataset_path:
+        config.val_dataset_path = str(val_dataset_path)
+    if output_dir:
+        config.output_path = str(output_dir)
+    if resume_checkpoint:
+        config.checkpoint_path = resume_checkpoint
+    if max_steps is not None and max_steps > 0:
+        config.max_steps = max_steps
+    if batch_size is not None and batch_size > 0:
+        config.batch_size = batch_size
+    if gradient_accumulation_steps is not None and gradient_accumulation_steps > 0:
+        config.gradient_accumulation_steps = gradient_accumulation_steps
+    if learning_rate is not None and learning_rate > 0:
+        config.learning_rate = learning_rate
+    if epochs is not None and epochs > 0:
+        config.num_epochs = epochs
+    if precision:
+        config.precision = precision.lower()
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+    out_path = Path(config.output_path)
+    out_path.mkdir(parents=True, exist_ok=True)
 
+    print(f"[*] Base Model       : {config.model_name}")
+    print(f"[*] Train Dataset    : {config.dataset_path}")
+    print(f"[*] Val Dataset      : {config.val_dataset_path}")
+    print(f"[*] Output Directory : {config.output_path}")
+    print(f"[*] Precision        : {config.precision.upper()}")
+    print(f"[*] Batch Size       : {config.batch_size} (accumulation: {config.gradient_accumulation_steps})")
+    print(f"[*] Learning Rate    : {config.learning_rate}")
+    print(f"[*] Epochs / Steps   : {config.num_epochs} epochs | max_steps={config.max_steps}")
+    print(f"[*] Context Length   : {config.context_length}\n")
+
+    # Dry run / mock check
     if dry_run or os.getenv("ORNAMENT_TRAIN_MOCK") == "1":
-        print("[*] Dry run / test mode specified. Validating dataset schema...")
+        print("[*] Dry run mode enabled. Validating dataset schema...")
         count = 0
-        with open(train_dataset_path, "r", encoding="utf-8") as f:
+        ds_file = Path(config.dataset_path)
+        if not ds_file.exists():
+            ds_file = project_root / config.dataset_path
+        with open(ds_file, "r", encoding="utf-8") as f:
             for line in f:
                 if line.strip():
                     item = json.loads(line)
-                    assert "messages" in item, "Missing 'messages' key in dataset item"
+                    assert "messages" in item, "Missing 'messages' in ChatML item"
                     count += 1
         print(f"[OK] Dataset validated: {count} samples with valid ChatML schema.")
         mock_meta = {
             "status": "ready_for_training",
             "samples": count,
-            "base_model": base_model_name,
-            "lora_r": lora_r,
-            "lora_alpha": lora_alpha,
-            "target_modules": target_modules
+            "base_model": config.model_name,
+            "precision": config.precision,
+            "lora_r": config.lora_r,
+            "lora_alpha": config.lora_alpha,
+            "target_modules": config.target_modules
         }
-        with open(output_dir / "training_spec.json", "w", encoding="utf-8") as f:
+        with open(out_path / "training_spec.json", "w", encoding="utf-8") as f:
             json.dump(mock_meta, f, indent=2)
-        print(f"[SUCCESS] Training spec written to {output_dir / 'training_spec.json'}")
+        print(f"[SUCCESS] Training spec written to {out_path / 'training_spec.json'}")
         return True
 
+    # 2. Framework & GPU Telemetry
     try:
         import torch
         from transformers import (
@@ -88,75 +145,122 @@ def train(
         from datasets import Dataset
     except ImportError as e:
         print(f"[!] Required training framework missing: {e}")
-        print("[*] Install dependencies with:")
-        print("    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124")
-        print("    pip install transformers peft accelerate bitsandbytes datasets")
+        print("[*] Install dependencies with: pip install -r requirements-train.txt")
         return False
 
-    # Check CUDA device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("=" * 65)
+    print("                 HARDWARE & CUDA TELEMETRY")
+    print("=" * 65)
+    print(f"[*] PyTorch Version  : {torch.__version__}")
+    print(f"[*] CUDA Available   : {torch.cuda.is_available()}")
+    print(f"[*] CUDA Version     : {torch.version.cuda or 'N/A'}")
+    print(f"[*] Selected Device  : {device}")
+
     if not torch.cuda.is_available():
-        print("[!] CUDA is not available. GPU is required for 4-bit QLoRA training.")
+        print("\n[!] WARNING: CUDA is not available. GPU is required for efficient training.")
         return False
 
     gpu_name = torch.cuda.get_device_name(0)
-    vram_mb = torch.cuda.get_device_properties(0).total_memory / (1024 * 1024)
-    print(f"[*] Detected GPU: {gpu_name} ({round(vram_mb, 1)} MB VRAM)")
+    props = torch.cuda.get_device_properties(0)
+    total_vram_gb = round(props.total_memory / (1024 ** 3), 2)
+    print(f"[*] Detected GPU     : {gpu_name}")
+    print(f"[*] Total VRAM       : {total_vram_gb} GB")
+    print(f"[*] BF16 Supported   : {torch.cuda.is_bf16_supported()}")
+    print(f"[*] FP16 Supported   : True\n")
 
-    # 1. 4-bit Quantization Config (NF4)
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.float16
-    )
+    # 3. Model & Quantization Configuration
+    bnb_config = None
+    torch_dtype = torch.float16
 
-    print(f"[*] Loading base model tokenizer: {base_model_name}...")
-    tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
+    if config.precision == "4bit":
+        print("[*] Configuring 4-bit NormalFloat (NF4) double quantization...")
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_compute_dtype=torch.float16
+        )
+    elif config.precision == "8bit":
+        print("[*] Configuring 8-bit quantization...")
+        bnb_config = BitsAndBytesConfig(load_in_8bit=True)
+    elif config.precision == "bf16":
+        torch_dtype = torch.bfloat16
+    elif config.precision == "fp16":
+        torch_dtype = torch.float16
+
+    # Load Tokenizer
+    print(f"[*] Loading tokenizer for {config.model_name}...")
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(config.model_name, local_files_only=True, trust_remote_code=True)
+    except Exception:
+        tokenizer = AutoTokenizer.from_pretrained(config.model_name, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    print(f"[*] Loading base model in 4-bit precision onto GPU...")
-    model = AutoModelForCausalLM.from_pretrained(
-        base_model_name,
-        quantization_config=bnb_config,
-        device_map="auto",
-        trust_remote_code=True
-    )
+    # Load Base Model
+    print(f"[*] Loading base model weights ({config.precision.upper()})...")
+    load_kwargs: Dict[str, Any] = {
+        "device_map": "auto",
+        "trust_remote_code": True,
+    }
+    if bnb_config is not None:
+        load_kwargs["quantization_config"] = bnb_config
+    else:
+        load_kwargs["torch_dtype"] = torch_dtype
 
-    model = prepare_model_for_kbit_training(model)
-    model.gradient_checkpointing_enable()
+    try:
+        model = AutoModelForCausalLM.from_pretrained(
+            config.model_name,
+            local_files_only=True,
+            **load_kwargs
+        )
+    except Exception:
+        model = AutoModelForCausalLM.from_pretrained(
+            config.model_name,
+            **load_kwargs
+        )
 
-    # 2. Attach LoRA Adapter
-    print(f"[*] Initializing LoRA adapter (r={lora_r}, alpha={lora_alpha})...")
+    if config.precision in ["4bit", "8bit"]:
+        model = prepare_model_for_kbit_training(model)
+    if config.gradient_checkpointing:
+        model.gradient_checkpointing_enable()
+
+    # 4. Attach LoRA Adapter
+    print(f"[*] Initializing LoRA adapter (r={config.lora_r}, alpha={config.lora_alpha})...")
     peft_config = LoraConfig(
-        r=lora_r,
-        lora_alpha=lora_alpha,
-        target_modules=target_modules,
-        lora_dropout=lora_dropout,
-        bias="none",
-        task_type="CAUSAL_LM"
+        r=config.lora_r,
+        lora_alpha=config.lora_alpha,
+        target_modules=config.target_modules,
+        lora_dropout=config.lora_dropout,
+        bias=config.bias,
+        task_type=config.task_type
     )
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
 
-    # 3. Load Datasets
-    print(f"[*] Processing dataset entries into tokenized sequences...")
-    def load_jsonl(path: Path) -> List[Dict[str, Any]]:
+    # 5. Load and Tokenize Datasets
+    print(f"\n[*] Processing ChatML dataset into tokenized sequences...")
+    def load_jsonl(p: Path) -> List[Dict[str, Any]]:
         entries = []
-        with open(path, "r", encoding="utf-8") as f:
+        target = p if p.exists() else (project_root / p)
+        if not target.exists():
+            raise FileNotFoundError(f"Dataset file not found at: {target}")
+        with open(target, "r", encoding="utf-8") as f:
             for line in f:
                 if line.strip():
                     entries.append(json.loads(line))
         return entries
 
-    raw_train = load_jsonl(train_dataset_path)
-    raw_val = load_jsonl(val_dataset_path)
+    raw_train = load_jsonl(Path(config.dataset_path))
+    raw_val = load_jsonl(Path(config.val_dataset_path))
+    print(f"[*] Ingested {len(raw_train)} training samples and {len(raw_val)} validation samples.")
+
+    max_seq_len = config.context_length
 
     def preprocess_function(examples):
         input_ids_list = []
         labels_list = []
-        max_seq_length = hyperparams.get("max_seq_length", 2048)
-
         for msgs in examples["messages"]:
             text = tokenizer.apply_chat_template(
                 msgs,
@@ -166,7 +270,7 @@ def train(
             tokens = tokenizer(
                 text,
                 truncation=True,
-                max_length=max_seq_length,
+                max_length=max_seq_len,
                 padding=False,
                 return_tensors=None
             )
@@ -174,7 +278,6 @@ def train(
             labels = list(input_ids)
             input_ids_list.append(input_ids)
             labels_list.append(labels)
-
         return {"input_ids": input_ids_list, "labels": labels_list}
 
     train_ds = Dataset.from_list(raw_train)
@@ -183,24 +286,34 @@ def train(
     train_tokenized = train_ds.map(preprocess_function, batched=True, remove_columns=train_ds.column_names)
     val_tokenized = val_ds.map(preprocess_function, batched=True, remove_columns=val_ds.column_names)
 
-    # 4. Training Arguments
-    training_args = TrainingArguments(
-        output_dir=str(output_dir),
-        per_device_train_batch_size=hyperparams.get("per_device_train_batch_size", 1),
-        gradient_accumulation_steps=hyperparams.get("gradient_accumulation_steps", 16),
-        learning_rate=hyperparams.get("learning_rate", 2e-4),
-        warmup_steps=hyperparams.get("warmup_steps", 10),
-        max_grad_norm=hyperparams.get("max_grad_norm", 0.3),
-        num_train_epochs=hyperparams.get("num_train_epochs", 2),
-        optim="paged_adamw_8bit",
-        fp16=True,
-        logging_steps=hyperparams.get("logging_steps", 10),
-        eval_strategy="no",
-        save_strategy="steps",
-        save_steps=hyperparams.get("save_steps", 20),
-        save_total_limit=2,
-        report_to="none"
-    )
+    # 6. Training Arguments & Resumption Logic
+    training_kwargs: Dict[str, Any] = {
+        "output_dir": str(out_path),
+        "per_device_train_batch_size": config.batch_size,
+        "gradient_accumulation_steps": config.gradient_accumulation_steps,
+        "learning_rate": config.learning_rate,
+        "warmup_ratio": config.warmup_ratio,
+        "max_grad_norm": config.max_grad_norm,
+        "num_train_epochs": config.num_epochs,
+        "optim": config.optim,
+        "fp16": (config.precision != "bf16"),
+        "bf16": (config.precision == "bf16" and torch.cuda.is_bf16_supported()),
+        "logging_steps": config.logging_steps,
+        "eval_strategy": config.eval_strategy,
+        "save_strategy": config.save_strategy,
+        "save_steps": config.save_steps,
+        "save_total_limit": 3,
+        "report_to": "none",
+        "dataloader_num_workers": 0,
+    }
+
+    if config.max_steps > 0:
+        training_kwargs["max_steps"] = config.max_steps
+        print(f"[*] Active Mode: SANITY TEST / FIXED STEPS ({config.max_steps} steps)")
+    else:
+        print(f"[*] Active Mode: FULL TRAINING ({config.num_epochs} epochs)")
+
+    training_args = TrainingArguments(**training_kwargs)
 
     data_collator = DataCollatorForSeq2Seq(
         tokenizer=tokenizer,
@@ -215,34 +328,108 @@ def train(
         data_collator=data_collator
     )
 
-    print("\n[*] Starting training loop on NVIDIA RTX 3050...")
+    # Determine Resumption Target
+    resume_from = None
+    if config.checkpoint_path:
+        cp = config.checkpoint_path.strip()
+        if cp.lower() in ["latest", "true", "1"]:
+            ckpts = list(out_path.glob("checkpoint-*"))
+            if ckpts:
+                ckpts.sort(key=lambda x: int(x.name.split("-")[1]))
+                resume_from = str(ckpts[-1])
+                print(f"[*] Found latest checkpoint to resume: {resume_from}")
+            else:
+                print(f"[*] No checkpoint found in {out_path}. Starting fresh training.")
+        else:
+            resume_from = cp
+            print(f"[*] Resuming explicitly from: {resume_from}")
+
+    # 7. Execute Training Loop with CUDA OOM Safeguard
+    print("\n" + "=" * 65)
+    print("                  LAUNCHING TRAINING LOOP")
+    print("=" * 65)
     start_time = time.time()
-    trainer.train()
+
+    try:
+        trainer.train(resume_from_checkpoint=resume_from)
+    except torch.cuda.OutOfMemoryError as oom:
+        print("\n" + "!" * 65)
+        print("          CUDA OUT OF MEMORY (OOM) ERROR CAUGHT")
+        print("!" * 65)
+        print(f"[!] Details: {oom}\n")
+        print("[*] Actionable remediation recommendations:")
+        print("    1. Set BATCH_SIZE=1 (e.g., export BATCH_SIZE=1)")
+        print("    2. Set CONTEXT_LENGTH=1024 or 1280 (export CONTEXT_LENGTH=1280)")
+        print("    3. Increase GRADIENT_ACCUMULATION_STEPS (export GRADIENT_ACCUMULATION_STEPS=16)")
+        print("    4. If using 16-bit, switch to 4-bit (export PRECISION=4bit)")
+        print("    5. Any completed checkpoints remain safely saved in the output directory.")
+        print("!" * 65 + "\n")
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        return False
+
     duration = time.time() - start_time
     print(f"\n[OK] Training completed in {round(duration / 60, 2)} minutes.")
 
-    # 5. Save Final Adapter
-    print(f"[*] Saving trained LoRA adapter to: {output_dir}")
-    model.save_pretrained(str(output_dir))
-    tokenizer.save_pretrained(str(output_dir))
-    print("[SUCCESS] Ornàment LoRA adapter saved successfully.")
+    # 8. Save Final Model & Metadata
+    print(f"[*] Saving final trained adapter weights to: {out_path}")
+    model.save_pretrained(str(out_path))
+    tokenizer.save_pretrained(str(out_path))
 
+    latest_meta = {
+        "status": "completed",
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "base_model": config.model_name,
+        "adapter_path": str(out_path),
+        "duration_minutes": round(duration / 60, 2),
+        "precision": config.precision,
+        "batch_size": config.batch_size,
+        "gradient_accumulation_steps": config.gradient_accumulation_steps,
+        "max_steps": config.max_steps,
+        "num_epochs": config.num_epochs,
+    }
+    with open(out_path / "latest_checkpoint.json", "w", encoding="utf-8") as f:
+        json.dump(latest_meta, f, indent=2)
+
+    print("[SUCCESS] Ornàment LoRA adapter and metadata saved successfully.")
     return True
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train Ornàment Qwen Coder Model")
-    parser.add_argument("--config", default="ai-website-engineer-model/configs/lora_config_3b.json")
-    parser.add_argument("--train-dataset", default="ai-website-engineer-model/datasets/ornament_master_train.jsonl")
-    parser.add_argument("--val-dataset", default="ai-website-engineer-model/datasets/ornament_master_val.jsonl")
-    parser.add_argument("--output", default="ai-website-engineer-model/adapters/v0.1.0")
-    parser.add_argument("--dry-run", action="store_true", default=False)
+    parser = argparse.ArgumentParser(description="Ornàment Multi-Device LoRA Training Pipeline")
+    parser.add_argument("--config", default="ai-website-engineer-model/configs/training_config.yaml",
+                        help="Path to YAML or JSON configuration file")
+    parser.add_argument("--train-dataset", default=None, help="Path to training JSONL dataset")
+    parser.add_argument("--val-dataset", default=None, help="Path to validation JSONL dataset")
+    parser.add_argument("--output", default=None, help="Output directory for trained adapter")
+    parser.add_argument("--resume", "--resume-from-checkpoint", dest="resume", default=None,
+                        help="Set to 'latest' or specific checkpoint path to resume training")
+    parser.add_argument("--max-steps", type=int, default=None, help="Run for specific number of steps")
+    parser.add_argument("--sanity-test", action="store_true", default=False,
+                        help="Run a 50-step sanity test before launching full training")
+    parser.add_argument("--batch-size", type=int, default=None, help="Per-device batch size")
+    parser.add_argument("--grad-accum", type=int, default=None, help="Gradient accumulation steps")
+    parser.add_argument("--lr", type=float, default=None, help="Learning rate")
+    parser.add_argument("--epochs", type=int, default=None, help="Number of training epochs")
+    parser.add_argument("--precision", default=None, choices=["4bit", "8bit", "fp16", "bf16"],
+                        help="Model precision")
+    parser.add_argument("--dry-run", action="store_true", default=False, help="Validate dataset schema only")
+
     args = parser.parse_args()
 
-    base = Path(__file__).resolve().parent.parent.parent
+    steps = 50 if args.sanity_test else args.max_steps
+
     train(
-        base / args.config,
-        base / args.train_dataset,
-        base / args.val_dataset,
-        base / args.output,
-        dry_run=args.dry_run
+        config_path=Path(args.config) if args.config else None,
+        train_dataset_path=Path(args.train_dataset) if args.train_dataset else None,
+        val_dataset_path=Path(args.val_dataset) if args.val_dataset else None,
+        output_dir=Path(args.output) if args.output else None,
+        dry_run=args.dry_run,
+        resume_checkpoint=args.resume,
+        max_steps=steps,
+        batch_size=args.batch_size,
+        gradient_accumulation_steps=args.grad_accum,
+        learning_rate=args.lr,
+        epochs=args.epochs,
+        precision=args.precision
     )

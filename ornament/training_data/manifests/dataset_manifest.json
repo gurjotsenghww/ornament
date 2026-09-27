@@ -1,14 +1,14 @@
 {
   "dataset_version": "dataset-v0.1",
-  "generation_date": "2026-09-27T06:59:17.166643+00:00",
+  "generation_date": "2026-09-27T08:44:07.320259+00:00",
   "sample_counts": {
     "html": 519,
     "css": 8,
-    "paired": 19720,
-    "debugging": 19800,
-    "total_validated": 40047,
+    "paired": 31920,
+    "debugging": 32000,
+    "total_validated": 64447,
     "rejected_count": 0,
-    "duplicate_skips": 197073
+    "duplicate_skips": 319073
   },
   "category_distribution": {
     "html": {
@@ -35,10 +35,10 @@
       "buttons": 1
     },
     "paired": {
-      "paired": 19720
+      "paired": 31920
     },
     "debugging": {
-      "debugging": 19800
+      "debugging": 32000
     }
   },
   "license_distribution": {

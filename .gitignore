@@ -1,4 +1,4 @@
-# Python
+# Python & Virtual Environments
 __pycache__/
 *.py[cod]
 *$py.class
@@ -25,6 +25,12 @@ env/
 venv/
 ENV/
 
+# Local & Cloud Caches
+.cache/
+cache/
+.pytest_cache/
+playwright/.cache/
+
 # Node & Next.js
 node_modules/
 .next/
@@ -35,13 +41,12 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Playwright
+# Playwright Reports
 test-results/
 playwright-report/
 blob-report/
-playwright/.cache/
 
-# Databases & local state
+# Databases & Runtime State
 *.sqlite
 *.sqlite3
 *.db
@@ -49,36 +54,55 @@ playwright/.cache/
 workspace/*
 !workspace/.gitkeep
 
-# Environment variables & secrets
+# Environment variables, Secrets & Credentials
 .env
+.env.*
 .env.local
 .env.*.local
 *.pem
 *.key
+credentials*
+*.token
+id_rsa*
 
-# Model artifacts (huge weights tracked via LFS or artifact storage)
+# Model Weights & Binary Checkpoints (Phase 6 & 9: Large Files Excluded from Git)
 *.bin
 *.pt
 *.safetensors
 *.gguf
+ai-website-engineer-model/adapters/**
+!ai-website-engineer-model/adapters/.gitkeep
+ai-website-engineer-model/weights/**
+!ai-website-engineer-model/weights/.gitkeep
 
-# Training Data Artifacts (Section 25)
-ornament/training_data/codes/*/*
-!ornament/training_data/codes/*/.gitkeep
-ornament/training_data/debugging/*/*
-!ornament/training_data/debugging/.gitkeep
-ornament/training_data/projects/*/*
-!ornament/training_data/projects/*/.gitkeep
+# Datasets & Crawl Stores (Phase 6 & 9: Datasets Reside on Persistent Storage / Google Drive)
+ornament/training_data/codes/**
+!ornament/training_data/codes/**/.gitkeep
+ornament/training_data/debugging/**
+!ornament/training_data/debugging/**/.gitkeep
+ornament/training_data/projects/**
+!ornament/training_data/projects/**/.gitkeep
+ornament/training_data/raw/**
+!ornament/training_data/raw/.gitkeep
+ornament/training_data/processed/**
+!ornament/training_data/processed/.gitkeep
+ornament/training_data/validated/**
+!ornament/training_data/validated/.gitkeep
+ornament/training_data/rejected/**
+!ornament/training_data/rejected/.gitkeep
+ornament/training_data/trajectories/**
+!ornament/training_data/trajectories/.gitkeep
 ornament/training_data/datasets/*.jsonl
 ai-website-engineer-model/datasets/*.jsonl
-ai-website-engineer-model/adapters/*/*
-!ai-website-engineer-model/adapters/.gitkeep
 ornament/training_data/storage/crawl_state.json
 ornament/training_data/processed/dedup_index.json
-ornament/training_data/rejected/*
-!ornament/training_data/rejected/.gitkeep
 
-# IDE
+# Google Colab & Jupyter Notebook Artifacts
+.ipynb_checkpoints/
+colab_checkpoints/
+*.tmp
+
+# IDE Settings
 .idea/
 .vscode/
 *.swp
