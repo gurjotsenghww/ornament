@@ -1123,12 +1123,22 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                         </button>
                     </div>
-                    <div class="toolbar-right">
-                        <button class="dropdown-btn">
+                    <div class="toolbar-right" style="position: relative;">
+                        <button class="dropdown-btn" id="modelDropdownBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Select AI Synthesis Model">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                            Web
+                            <span id="modelBtnLabel">Qwen 2.5 Coder</span>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                         </button>
+                        <div class="model-menu-popover" id="modelMenuPopover" style="display: none; position: absolute; bottom: calc(100% + 10px); right: 48px; background: rgba(24, 24, 28, 0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 6px; box-shadow: 0 16px 36px rgba(0,0,0,0.5); z-index: 1000; min-width: 230px;">
+                            <div class="model-opt active" data-model="qwen" style="display:flex; align-items:center; justify-content:space-between; padding: 8px 12px; border-radius: 8px; cursor:pointer; color: #fff; font-size: 13px; font-weight: 500; transition: background 0.15s; background: rgba(255,255,255,0.08);">
+                                <span>🧠 Qwen 2.5 Coder (Neural 3B)</span>
+                                <span class="check-mark" style="color: #6366f1; font-weight: bold; margin-left: 8px;">✓</span>
+                            </div>
+                            <div class="model-opt" data-model="instant" style="display:flex; align-items:center; justify-content:space-between; padding: 8px 12px; border-radius: 8px; cursor:pointer; color: #8e8e9f; font-size: 13px; font-weight: 500; transition: background 0.15s;">
+                                <span>⚡ Instant Synthesizer</span>
+                                <span class="check-mark" style="display:none; color: #6366f1; font-weight: bold; margin-left: 8px;">✓</span>
+                            </div>
+                        </div>
                         <button class="submit-btn" id="submitBtn" aria-label="Submit">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
                         </button>
@@ -2128,18 +2138,33 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         return bubble;
     }
 
-    const DEFAULT_ENGINEERING_FLOW = {
-        headerLabel: 'Ornàment Engineer synthesizing project...',
-        doneLabel: 'Website ready',
+    let currentSelectedModel = 'qwen';
+
+    const QWEN_ENGINEERING_FLOW = {
+        headerLabel: 'Qwen 2.5 Coder synthesizing project...',
+        doneLabel: 'Website ready (Synthesized by Qwen)',
         items: [
-            'Understanding your request & architecture',
-            'Planning page structure & theme tokens',
-            'Designing layout & 60-30-10 palette',
-            'Writing code files (HTML, CSS, JS)...',
-            'Optimizing responsiveness & accessibility',
-            'Finalizing and preparing preview'
+            'Querying local Qwen2.5-Coder-3B neural model',
+            'Synthesizing bespoke brand & layout architecture',
+            'Applying 60-30-10 color harmonization system',
+            'Writing production code bundle (HTML, CSS, JS)...',
+            'Validating responsive breakpoints & accessibility'
         ]
     };
+
+    const INSTANT_ENGINEERING_FLOW = {
+        headerLabel: 'Instant Synthesizer generating project...',
+        doneLabel: 'Website ready',
+        items: [
+            'Analyzing prompt tokens & visual intent',
+            'Deriving optimal 60-30-10 design system',
+            'Scaffolding responsive layouts & interactive widgets',
+            'Writing production code bundle (HTML, CSS, JS)...',
+            'Finalizing Git checkpoint & live preview'
+        ]
+    };
+
+    const DEFAULT_ENGINEERING_FLOW = QWEN_ENGINEERING_FLOW;
 
     const SPARKLE_ICON = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.3L19 10l-5.2 1.7L12 17l-1.8-5.3L5 10l5.2-1.7L12 3z"/><path d="M19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16z"/></svg>';
 
@@ -2220,7 +2245,8 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     prompt: userPrompt,
-                    attachments: attachmentsData
+                    attachments: attachmentsData,
+                    model: currentSelectedModel
                 })
             });
 
@@ -2303,7 +2329,8 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         refreshAttachmentsVisibility();
         promptInput.focus();
 
-        showAssistantActivityFlow(DEFAULT_ENGINEERING_FLOW, text, attachmentsData);
+        const activeFlow = currentSelectedModel === 'qwen' ? QWEN_ENGINEERING_FLOW : INSTANT_ENGINEERING_FLOW;
+        showAssistantActivityFlow(activeFlow, text, attachmentsData);
     }
 
     submitBtn.addEventListener('click', sendMessage);
@@ -2316,6 +2343,52 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
 
     imageBtn.addEventListener('click', () => imageInput.click());
     attachBtn.addEventListener('click', () => docInput.click());
+
+    // Model Selector Interaction
+    const modelDropdownBtn = document.getElementById('modelDropdownBtn');
+    const modelMenuPopover = document.getElementById('modelMenuPopover');
+    const modelBtnLabel = document.getElementById('modelBtnLabel');
+
+    if (modelDropdownBtn && modelMenuPopover) {
+        modelDropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = modelMenuPopover.style.display === 'block';
+            modelMenuPopover.style.display = isOpen ? 'none' : 'block';
+            modelDropdownBtn.setAttribute('aria-expanded', String(!isOpen));
+        });
+
+        modelMenuPopover.querySelectorAll('.model-opt').forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentSelectedModel = opt.getAttribute('data-model');
+                modelMenuPopover.querySelectorAll('.model-opt').forEach(o => {
+                    o.classList.remove('active');
+                    o.style.background = 'transparent';
+                    o.style.color = '#8e8e9f';
+                    const chk = o.querySelector('.check-mark');
+                    if (chk) chk.style.display = 'none';
+                });
+                opt.classList.add('active');
+                opt.style.background = 'rgba(255,255,255,0.08)';
+                opt.style.color = '#fff';
+                const activeChk = opt.querySelector('.check-mark');
+                if (activeChk) activeChk.style.display = 'inline';
+
+                if (modelBtnLabel) {
+                    modelBtnLabel.textContent = currentSelectedModel === 'qwen' ? 'Qwen 2.5 Coder' : 'Instant Synthesizer';
+                }
+                modelMenuPopover.style.display = 'none';
+                modelDropdownBtn.setAttribute('aria-expanded', 'false');
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!modelMenuPopover.contains(e.target) && e.target !== modelDropdownBtn) {
+                modelMenuPopover.style.display = 'none';
+                modelDropdownBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
 
     const ALLOWED_DOCS = ['pdf', 'doc', 'docx', 'ppt', 'pptx'];
     const getExt = (name) => name.split('.').pop().toLowerCase();

@@ -1,4 +1,5 @@
 import re
+import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from ornament.files.file_manager import FileManager
@@ -124,33 +125,135 @@ class AutonomousSiteBuilder:
 
         return brand, title, subtitle
 
+    _llm_instance = None
+
+    @classmethod
+    def get_qwen_model(cls):
+        """Lazy loads local Qwen2.5-Coder-3B-Instruct GGUF model via llama-cpp-python on CPU."""
+        if cls._llm_instance is None:
+            try:
+                from llama_cpp import Llama
+                weights = settings.base_dir / "ai-website-engineer-model" / "weights" / "qwen2.5-coder-3b-instruct-q4_k_m.gguf"
+                if weights.exists():
+                    cls._llm_instance = Llama(
+                        model_path=str(weights),
+                        n_ctx=2048,
+                        n_threads=4,
+                        verbose=False
+                    )
+            except Exception as e:
+                print(f"[AutonomousSiteBuilder] Failed to initialize Qwen: {e}")
+                cls._llm_instance = None
+        return cls._llm_instance
+
+    @classmethod
+    def query_qwen(cls, prompt: str, attachments_text: str = "") -> Optional[Dict[str, Any]]:
+        """Queries local Qwen2.5-Coder-3B for bespoke brand architecture, features, and styling."""
+        llm = cls.get_qwen_model()
+        if not llm:
+            return None
+        try:
+            user_content = prompt
+            if attachments_text:
+                user_content += f"\n\nContext:\n{attachments_text}"
+
+            system_prompt = (
+                "You are Ornàment, an elite autonomous website engineer powered by Qwen2.5-Coder-3B. "
+                "Synthesize high-conversion, modern website specifications for the user request. "
+                "Respond strictly with valid JSON having the following schema:\n"
+                "{\n"
+                '  "brand": "Brand Name",\n'
+                '  "title": "Hero Headline",\n'
+                '  "subtitle": "Clear, persuasive subheadline",\n'
+                '  "palette_theme": "indigo|emerald|cyan|amber|violet",\n'
+                '  "features": [\n'
+                '    {"title": "Feature 1", "description": "Crisp 1-2 sentence description", "badge": "Short Badge"},\n'
+                '    {"title": "Feature 2", "description": "Crisp 1-2 sentence description", "badge": "Short Badge"},\n'
+                '    {"title": "Feature 3", "description": "Crisp 1-2 sentence description", "badge": "Short Badge"}\n'
+                "  ],\n"
+                '  "explanation": "Professional engineering breakdown of the generated architecture"\n'
+                "}"
+            )
+
+            res = llm.create_chat_completion(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content}
+                ],
+                max_tokens=450,
+                temperature=0.3
+            )
+            raw = res["choices"][0]["message"]["content"]
+            match = re.search(r"\{.*\}", raw, re.DOTALL)
+            if match:
+                return json.loads(match.group(0))
+        except Exception as e:
+            print(f"[AutonomousSiteBuilder] Qwen query exception: {e}")
+        return None
+
     @classmethod
     def generate_site_bundle(
         cls,
         prompt: str,
         attachments: Optional[List[Dict[str, Any]]] = None,
-        project_name: Optional[str] = None
+        project_name: Optional[str] = None,
+        model: str = "qwen"
     ) -> Dict[str, Any]:
         """
         Synthesizes the complete 3-file site: index.html, styles.css, script.js,
         accompanied by an architectural explanation and project persistence.
+        Uses actual Qwen 2.5 Coder neural generation when selected.
         """
         palette = cls.detect_palette(prompt)
         brand, title, subtitle = cls.derive_brand_and_title(prompt)
+        features = None
+        qwen_explanation = None
+        model_name = "Ornàment Instant Synthesizer"
+
+        # Incorporate attachments context if provided
+        attachment_notes = ""
+        attachment_text = ""
+        if attachments:
+            for att in attachments:
+                if att.get("type") == "text" and att.get("content"):
+                    c = att.get("content")[:120]
+                    attachment_notes += f"\n<!-- Attached context: {c} -->"
+                    attachment_text += f"{c}\n"
+
+        # Query Qwen 2.5 Coder if requested
+        if model and model.lower() in ["qwen", "qwen2.5", "neural"]:
+            qwen_res = cls.query_qwen(prompt, attachment_text)
+            if qwen_res:
+                model_name = "Qwen 2.5 Coder (Neural 3B)"
+                if qwen_res.get("brand"):
+                    brand = qwen_res["brand"].strip()
+                if qwen_res.get("title"):
+                    title = qwen_res["title"].strip()
+                if qwen_res.get("subtitle"):
+                    subtitle = qwen_res["subtitle"].strip()
+                pt = str(qwen_res.get("palette_theme", "")).lower()
+                if pt in cls.PALETTES:
+                    palette = cls.PALETTES[pt]
+                if qwen_res.get("features") and isinstance(qwen_res["features"], list) and len(qwen_res["features"]) >= 3:
+                    features = qwen_res["features"][:3]
+                if qwen_res.get("explanation"):
+                    qwen_explanation = qwen_res["explanation"].strip()
 
         # Sanitize project slug
         if not project_name:
             slug = re.sub(r"[^a-z0-9]+", "-", brand.lower()).strip("-")
             project_name = slug if slug else f"site-{int(Path('.').stat().st_mtime)}"
 
-        # Incorporate attachments context if provided
-        attachment_notes = ""
-        if attachments:
-            for att in attachments:
-                if att.get("type") == "text" and att.get("content"):
-                    attachment_notes += f"\n<!-- Attached context: {att.get('content')[:120]} -->"
-
-        html_content = cls._build_html(brand, title, subtitle, palette, prompt, attachment_notes)
+        html_content = cls._build_html(
+            brand=brand,
+            title=title,
+            subtitle=subtitle,
+            palette=palette,
+            prompt=prompt,
+            attachment_notes=attachment_notes,
+            features=features,
+            model_name=model_name
+        )
         css_content = cls._build_css(palette)
         js_content = cls._build_js(brand)
 
@@ -185,19 +288,29 @@ class AutonomousSiteBuilder:
         except Exception:
             pass
 
-        explanation = (
-            f"Crafted a production-ready responsive website for **{brand}** applying the **60-30-10** design system rule with the **{palette['name']}** color theme. "
-            f"The architecture spans three decoupled files:\n"
-            f"- `index.html`: Semantic HTML5 markup containing a responsive frosted navigation bar, high-impact hero header, interactive feature cards, metrics telemetry, and an interactive lead capture.\n"
-            f"- `styles.css`: Modern CSS with custom properties, fluid `clamp()` typography, CSS grid & flexbox layouts, glassmorphism blur effects, and full mobile breakpoints.\n"
-            f"- `script.js`: Client-side interactivity including smooth anchor scrolling, mobile navigation toggle, tabbed showcase switching, and real-time form toast notifications."
-        )
+        if qwen_explanation:
+            explanation = (
+                f"Generated with **{model_name}** for **{brand}** applying the **60-30-10** design system with the **{palette['name']}** color theme.\n\n"
+                f"{qwen_explanation}\n\n"
+                f"- `index.html`: Semantic HTML5 markup containing a responsive frosted navigation bar, high-impact hero header, bespoke feature cards, metrics telemetry, and an interactive lead capture.\n"
+                f"- `styles.css`: Modern CSS with custom properties, fluid `clamp()` typography, CSS grid & flexbox layouts, glassmorphism blur effects, and full mobile breakpoints.\n"
+                f"- `script.js`: Client-side interactivity including smooth anchor scrolling, mobile navigation toggle, tabbed showcase switching, and real-time form toast notifications."
+            )
+        else:
+            explanation = (
+                f"Crafted a production-ready responsive website for **{brand}** applying the **60-30-10** design system rule with the **{palette['name']}** color theme. "
+                f"Synthesized by **{model_name}** across three decoupled files:\n"
+                f"- `index.html`: Semantic HTML5 markup containing a responsive frosted navigation bar, high-impact hero header, interactive feature cards, metrics telemetry, and an interactive lead capture.\n"
+                f"- `styles.css`: Modern CSS with custom properties, fluid `clamp()` typography, CSS grid & flexbox layouts, glassmorphism blur effects, and full mobile breakpoints.\n"
+                f"- `script.js`: Client-side interactivity including smooth anchor scrolling, mobile navigation toggle, tabbed showcase switching, and real-time form toast notifications."
+            )
 
         return {
             "status": "success",
             "project_name": project_name,
             "title": title,
             "brand": brand,
+            "model_used": model_name,
             "palette": palette["name"],
             "files": files,
             "explanation": explanation
@@ -211,8 +324,37 @@ class AutonomousSiteBuilder:
         subtitle: str,
         palette: Dict[str, str],
         prompt: str,
-        attachment_notes: str
+        attachment_notes: str,
+        features: Optional[List[Dict[str, Any]]] = None,
+        model_name: str = "Qwen 2.5 Coder"
     ) -> str:
+        default_icons = [
+            '<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+            '<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+            '<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>'
+        ]
+        cards = features if (features and len(features) >= 3) else [
+            {"title": "Modular Component Engine", "description": "Self-contained responsive modules that adapt effortlessly across mobile, tablet, and ultra-wide viewports.", "badge": "Zero Config"},
+            {"title": "60-30-10 Design System", "description": "Calculated color distributions with strict luminance balance ensuring effortless visual hierarchy and WCAG AAA compliance.", "badge": "Harmonized Palette"},
+            {"title": "Instant Hydration", "description": "Clean, vanilla JavaScript execution without bloated bundle overhead, delivering lightning-fast First Contentful Paint.", "badge": "Ultra Low Latency"}
+        ]
+        feature_cards_html = ""
+        for i, feat in enumerate(cards[:3]):
+            is_active = ' active-card' if i == 1 else ''
+            icon = default_icons[i % len(default_icons)]
+            f_title = feat.get('title', f'Feature {i+1}')
+            f_desc = feat.get('description', '')
+            f_badge = feat.get('badge', 'Engineered')
+            feature_cards_html += f'''
+      <div class="feature-card{is_active}">
+        <div class="feature-icon">
+          {icon}
+        </div>
+        <h3 class="feature-title">{f_title}</h3>
+        <p class="feature-text">{f_desc}</p>
+        <span class="feature-badge">{f_badge}</span>
+      </div>'''
+
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -252,7 +394,7 @@ class AutonomousSiteBuilder:
     <div class="hero-container">
       <div class="pill-badge">
         <span class="pill-dot"></span>
-        <span>Engineered with Ornàment Architecture</span>
+        <span>Engineered with {model_name}</span>
       </div>
       <h1 class="hero-title">{title}</h1>
       <p class="hero-subtitle">{subtitle}</p>
@@ -301,30 +443,7 @@ class AutonomousSiteBuilder:
       <p class="section-subtitle">Every element is crafted to ensure effortless operation, semantic purity, and maximum performance.</p>
     </div>
     <div class="grid-container">
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        </div>
-        <h3 class="feature-title">Modular Component Engine</h3>
-        <p class="feature-text">Self-contained responsive modules that adapt effortlessly across mobile, tablet, and ultra-wide viewports.</p>
-        <span class="feature-badge">Zero Config</span>
-      </div>
-      <div class="feature-card active-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
-        <h3 class="feature-title">60-30-10 Design System</h3>
-        <p class="feature-text">Calculated color distributions with strict luminance balance ensuring effortless visual hierarchy and WCAG AAA compliance.</p>
-        <span class="feature-badge">Harmonized Palette</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-        </div>
-        <h3 class="feature-title">Instant Hydration</h3>
-        <p class="feature-text">Clean, vanilla JavaScript execution without bloated bundle overhead, delivering lightning-fast First Contentful Paint.</p>
-        <span class="feature-badge">Ultra Low Latency</span>
-      </div>
+{feature_cards_html}
     </div>
   </section>
 
@@ -406,7 +525,7 @@ class AutonomousSiteBuilder:
           <span class="brand-badge">{brand[0]}</span>
           <span class="brand-name">{brand}</span>
         </div>
-        <p class="footer-tagline">Crafted autonomously by Ornàment AI Website Engineer.</p>
+        <p class="footer-tagline">Crafted autonomously by Ornàment AI Website Engineer powered by {model_name}.</p>
       </div>
       <div class="footer-col">
         <h5>Architecture</h5>

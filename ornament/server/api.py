@@ -216,6 +216,28 @@ class GenerateSiteRequest(BaseModel):
     prompt: str = ""
     project_name: Optional[str] = None
     attachments: Optional[List[GenerateSiteAttachment]] = None
+    model: Optional[str] = "qwen"
+
+@app.get("/api/models")
+def list_available_models():
+    weights = settings.base_dir / "ai-website-engineer-model" / "weights" / "qwen2.5-coder-3b-instruct-q4_k_m.gguf"
+    qwen_ready = weights.exists()
+    return [
+        {
+            "id": "qwen",
+            "name": "Qwen 2.5 Coder (Neural 3B)",
+            "description": "Local GGUF neural model running on CPU, synthesizing bespoke architecture & copy",
+            "ready": qwen_ready,
+            "default": True
+        },
+        {
+            "id": "instant",
+            "name": "Instant Synthesizer",
+            "description": "Deterministic design-theory synthesis engine with 60-30-10 color harmonization",
+            "ready": True,
+            "default": False
+        }
+    ]
 
 @app.post("/api/generate-site")
 async def generate_site_endpoint(req: GenerateSiteRequest):
@@ -224,7 +246,8 @@ async def generate_site_endpoint(req: GenerateSiteRequest):
     result = AutonomousSiteBuilder.generate_site_bundle(
         prompt=req.prompt,
         attachments=att_dicts,
-        project_name=req.project_name
+        project_name=req.project_name,
+        model=req.model or "qwen"
     )
     return result
 
