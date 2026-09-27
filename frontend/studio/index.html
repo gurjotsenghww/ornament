@@ -8,14 +8,18 @@
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
 <style>
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-family: 'JetBrains Mono', monospace !important;
         -webkit-font-smoothing: antialiased;
+    }
+
+    input, button, textarea, select {
+        font-family: 'JetBrains Mono', monospace !important;
     }
 
     :root {
@@ -62,6 +66,8 @@
     body.collapsed .user-info,
     body.collapsed .chevron { display: none; }
     body.collapsed .logo-area { justify-content: center; padding: 0; }
+    body.collapsed .logo { display: none; }
+    body.collapsed .toggle-btn { margin: 0 auto; display: flex; }
     body.collapsed .nav-item { justify-content: center; padding: 12px; }
     body.collapsed .user-profile { justify-content: center; }
 
@@ -219,16 +225,8 @@
     }
 
     .header-toggle {
-        display: flex;
-        width: 40px; height: 40px; border-radius: 50%;
-        background: rgba(255,255,255,0.75);
-        border: 1px solid rgba(255,255,255,0.5);
-        cursor: pointer; color: var(--text-main);
-        align-items: center; justify-content: center;
-        margin-right: auto;
-        flex-shrink: 0;
+        display: none !important;
     }
-    .header-toggle:hover { background: #fff; }
 
     .search-bar {
         display: flex; align-items: center;
@@ -272,9 +270,9 @@
     .hero > .prompt-box { animation-delay: 0.2s; }
 
     h1 {
-        font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
-        font-size: 76px; line-height: 1.08; font-weight: 400;
-        letter-spacing: -1px; margin-bottom: 20px;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 58px; line-height: 1.15; font-weight: 600;
+        letter-spacing: -1.5px; margin-bottom: 20px;
         color: #16171a;
     }
     h1 .light {
@@ -796,7 +794,7 @@
     .ce-code {
         display: flex;
         margin: 0; padding: 14px 0;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-family: 'JetBrains Mono', monospace !important;
         font-size: 12.5px; line-height: 1.65;
         white-space: pre;
     }
@@ -823,21 +821,194 @@
     .tok-prop { color: #79c0ff; }
     .tok-punct { color: #b0b0b6; }
 
-    .ce-preview-view { display: none; background: #fff; }
+    .ce-preview-view {
+        display: none;
+        background: #fff;
+        width: 100%;
+        border-radius: 0 0 16px 16px;
+        overflow: hidden;
+    }
     .ce-preview-view.active { display: block; }
     .ce-code-view.hidden { display: none; }
-    .ce-iframe { width: 100%; height: 360px; border: none; display: block; background: #fff; }
+    .ce-iframe { width: 100%; height: 420px; border: none; display: block; background: #fff; }
 
-    .code-explanation {
-        font-size: 13.5px; line-height: 1.55; color: #333;
+    /* ================= ELEGANT CODE EXPLANATION ================= */
+    .chat-bubble.code-explanation-bubble {
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        max-width: 720px;
+        width: 100%;
     }
-    .code-explanation p { margin: 0 0 8px; }
-    .code-explanation p:last-child { margin-bottom: 0; }
-    .code-explanation ul { margin: 0 0 8px; padding-left: 18px; }
-    .code-explanation li { margin-bottom: 4px; }
-    .code-explanation code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 12.5px; background: #f1f1f3; padding: 1px 5px; border-radius: 5px; color: #333;
+
+    .exp-card {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 16px;
+        padding: 20px 22px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        font-family: 'JetBrains Mono', monospace !important;
+    }
+
+    .exp-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0f0f2;
+    }
+
+    .exp-model-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #f4f5f8;
+        border: 1px solid #e5e7eb;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .exp-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    .exp-header-tag {
+        font-size: 11px;
+        font-weight: 500;
+        color: #9ca3af;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .exp-body {
+        font-size: 13px;
+        line-height: 1.6;
+        color: #374151;
+    }
+
+    .exp-p {
+        margin: 0 0 6px 0;
+    }
+
+    .exp-p:last-child {
+        margin-bottom: 0;
+    }
+
+    .exp-p strong {
+        color: #111827;
+        font-weight: 600;
+    }
+
+    .exp-p code {
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 12px;
+        background: #f3f4f6;
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: #1f2937;
+        border: 1px solid #e5e7eb;
+    }
+
+    .exp-files-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 4px;
+    }
+
+    .exp-file-card {
+        background: #fafafa;
+        border: 1px solid #eaebf0;
+        border-radius: 10px;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .exp-file-card:hover {
+        border-color: #cbd5e1;
+        background: #ffffff;
+    }
+
+    .exp-file-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .exp-file-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .exp-badge-html {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+    }
+
+    .exp-badge-css {
+        background: #dbeafe;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+    }
+
+    .exp-badge-js, .exp-badge-javascript {
+        background: #fef3c7;
+        color: #d97706;
+        border: 1px solid #fde68a;
+    }
+
+    .exp-file-name {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #111827;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .exp-file-desc {
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: #6b7280;
+    }
+
+    .exp-footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11.5px;
+        color: #6b7280;
+        padding-top: 10px;
+        border-top: 1px dashed #e5e7eb;
+    }
+
+    .exp-footer svg {
+        flex-shrink: 0;
+        color: #9ca3af;
+    }
+
+    .exp-footer strong {
+        color: #1f2937;
+        font-weight: 600;
     }
 
     /* ================= OVERLAY ================= */
@@ -1166,13 +1337,6 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
 
-            <button class="header-toggle" id="headerToggleBtn" aria-label="Toggle sidebar">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="4"></rect>
-                    <line x1="9" y1="3" x2="9" y2="21"></line>
-                </svg>
-            </button>
-
             <div class="search-bar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" placeholder="Search anything...">
@@ -1382,7 +1546,6 @@
     /* ============ SIDEBAR ============ */
     const body = document.body;
     const toggleBtn = document.getElementById('toggleBtn');
-    const headerToggleBtn = document.getElementById('headerToggleBtn');
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const overlay = document.getElementById('overlay');
     const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
@@ -1396,8 +1559,7 @@
         }
     }
 
-    toggleBtn.addEventListener('click', handleToggle);
-    headerToggleBtn.addEventListener('click', handleToggle);
+    if (toggleBtn) toggleBtn.addEventListener('click', handleToggle);
 
     hamburgerBtn.addEventListener('click', () => body.classList.add('drawer-open'));
     overlay.addEventListener('click', () => body.classList.remove('drawer-open'));
@@ -1436,7 +1598,7 @@
     /* ============ CHAT HISTORY (Recent Chats) ============ */
     const chatHistoryListEl = document.getElementById('chatHistoryList');
     const createNavItem = document.getElementById('createNavItem');
-    let chatSessions = [];   // { id, title, html }
+    let chatSessions = [];   // { id, title, hasModelTitle, userRenamed, html }
     let currentChatId = null;
 
     function genChatId() {
@@ -1447,9 +1609,34 @@
         const firstUserBubble = chatMessagesEl.querySelector('.chat-message.user .chat-bubble');
         if (firstUserBubble && firstUserBubble.textContent.trim()) {
             const t = firstUserBubble.textContent.trim();
-            return t.length > 40 ? t.slice(0, 40) + '…' : t;
+            return t.length > 36 ? t.slice(0, 36) + '…' : t;
         }
         return 'New chat';
+    }
+
+    async function requestModelChatTitle(chatId, userPrompt) {
+        if (!userPrompt || !userPrompt.trim()) return;
+        try {
+            const res = await fetch('/api/chat-title', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userPrompt.trim() })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.title) {
+                    const session = chatSessions.find(c => c.id === chatId);
+                    if (session && !session.userRenamed) {
+                        session.title = data.title;
+                        session.hasModelTitle = true;
+                        try { localStorage.setItem('ornament_chat_sessions', JSON.stringify(chatSessions)); } catch {}
+                        renderChatHistory();
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Model chat title generation failed:', e);
+        }
     }
 
     try {
@@ -1460,9 +1647,17 @@
     function saveCurrentChat() {
         if (chatMessagesEl.children.length === 0) return;
         if (!currentChatId) currentChatId = genChatId();
-        const snapshot = { id: currentChatId, title: deriveChatTitle(), html: chatMessagesEl.innerHTML };
+        const existing = chatSessions.find(c => c.id === currentChatId);
+        const title = existing ? existing.title : deriveChatTitle();
+        const snapshot = {
+            id: currentChatId,
+            title: title,
+            hasModelTitle: existing ? !!existing.hasModelTitle : false,
+            userRenamed: existing ? !!existing.userRenamed : false,
+            html: chatMessagesEl.innerHTML
+        };
         const idx = chatSessions.findIndex(c => c.id === currentChatId);
-        if (idx >= 0) chatSessions[idx] = snapshot;
+        if (idx >= 0) chatSessions[idx] = { ...chatSessions[idx], ...snapshot };
         else chatSessions.unshift(snapshot);
         try { localStorage.setItem('ornament_chat_sessions', JSON.stringify(chatSessions)); } catch {}
         renderChatHistory();
@@ -1486,6 +1681,7 @@
         const newTitle = window.prompt('Rename chat:', chat.title);
         if (newTitle && newTitle.trim()) {
             chat.title = newTitle.trim().slice(0, 60);
+            chat.userRenamed = true;
             try { localStorage.setItem('ornament_chat_sessions', JSON.stringify(chatSessions)); } catch {}
             renderChatHistory();
         }
@@ -1622,10 +1818,12 @@
         return out;
     }
 
-    const HIGHLIGHTERS = { html: highlightHtml, css: highlightCss, js: highlightJs };
+    const HIGHLIGHTERS = { html: highlightHtml, css: highlightCss, js: highlightJs, javascript: highlightJs };
 
     function renderCodeLines(content, lang) {
-        const highlighted = HIGHLIGHTERS[lang](content);
+        const l = (lang || '').toLowerCase();
+        const fn = HIGHLIGHTERS[l] || (l.includes('html') ? highlightHtml : (l.includes('css') ? highlightCss : (l.includes('js') ? highlightJs : null)));
+        const highlighted = fn ? fn(content || '') : escapeCode(content || '');
         const lines = highlighted.split('\n');
         const numbers = lines.map((_, i) => `<div>${i + 1}</div>`).join('');
         const body = lines.map(l => `<div>${l === '' ? '&nbsp;' : l}</div>`).join('');
@@ -1917,18 +2115,53 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
     }
 
     function buildPreviewDoc(files) {
-        const html = files.find(f => f.id === 'html').content;
-        const css = files.find(f => f.id === 'css').content;
-        const js = files.find(f => f.id === 'js').content;
-        return html
-            .replace('<link rel="stylesheet" href="styles.css" />', `<style>${css}</style>`)
-            .replace('<script defer src="script.js"><\/script>', `<script defer>${js}<\/script>`);
+        if (!files || !files.length) return '<!DOCTYPE html><html><body style="font-family:monospace;padding:24px;color:#888;">No preview available.</body></html>';
+
+        const htmlFile = files.find(f => f.id === 'html' || f.lang === 'html' || (f.name && f.name.endsWith('.html'))) || files[0];
+        const cssFile = files.find(f => f.id === 'css' || f.lang === 'css' || (f.name && f.name.endsWith('.css')));
+        const jsFile = files.find(f => f.id === 'js' || f.lang === 'js' || f.lang === 'javascript' || (f.name && f.name.endsWith('.js')));
+
+        let html = htmlFile ? (htmlFile.content || '') : '';
+        const css = cssFile ? (cssFile.content || '') : '';
+        const js = jsFile ? (jsFile.content || '') : '';
+
+        if (!html.includes('<html') && !html.includes('<!DOCTYPE') && !html.includes('<body')) {
+            html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n</head>\n<body>\n${html}\n</body>\n</html>`;
+        }
+
+        // Clean out link to styles.css or relative external stylesheet tags
+        html = html.replace(/<link\s+[^>]*rel=["']stylesheet["'][^>]*href=["'](?:\.\/)?styles?\.css["'][^>]*\/?>/gi, '');
+        // Clean out script src="script.js"
+        html = html.replace(/<script\s+[^>]*src=["'](?:\.\/)?script\.js["'][^>]*><\/script>/gi, '');
+
+        if (css.trim()) {
+            const styleBlock = `<style>\n${css}\n</style>`;
+            if (html.includes('</head>')) {
+                html = html.replace('</head>', `${styleBlock}\n</head>`);
+            } else if (html.includes('<body')) {
+                html = html.replace('<body', `${styleBlock}\n<body`);
+            } else {
+                html = styleBlock + html;
+            }
+        }
+
+        if (js.trim()) {
+            const scriptBlock = `<script>\ntry {\n${js}\n} catch (err) { console.error('Preview runtime error:', err); }\n<\/script>`;
+            if (html.includes('</body>')) {
+                html = html.replace('</body>', `${scriptBlock}\n</body>`);
+            } else {
+                html = html + '\n' + scriptBlock;
+            }
+        }
+
+        return html;
     }
 
     const FILE_ICONS = {
         html: '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
         css: '#',
-        js: 'JS'
+        js: 'JS',
+        javascript: 'JS'
     };
 
     function buildCodeExplorer(files, projectName = 'landing-page') {
@@ -1965,15 +2198,15 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                 </div>
                 <div class="ce-tabs">
                     ${files.map((f, i) => `
-                        <button class="ce-tab${i === 0 ? ' active' : ''}" type="button" data-file="${f.id}">
-                            <span class="ce-tab-icon">${f.lang === 'html' ? FILE_ICONS.html : FILE_ICONS[f.lang]}</span>
-                            ${f.name}
+                        <button class="ce-tab${i === 0 ? ' active' : ''}" type="button" data-file="${f.id || f.name}">
+                            <span class="ce-tab-icon">${FILE_ICONS[(f.lang || '').toLowerCase()] || FILE_ICONS.html}</span>
+                            ${escapeHtml(f.name)}
                         </button>
                     `).join('')}
                 </div>
                 <div class="ce-body">
                     <div class="ce-code-view"><pre class="ce-code"><span class="ce-line-numbers"></span><span class="ce-code-lines"></span></pre></div>
-                    <div class="ce-preview-view"><iframe class="ce-iframe" sandbox="allow-scripts"></iframe></div>
+                    <div class="ce-preview-view"><iframe class="ce-iframe" sandbox="allow-scripts allow-modals"></iframe></div>
                 </div>
             </div>
         `;
@@ -1990,14 +2223,16 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         const downloadBtn = wrap.querySelector('[data-action="download"]');
         const runBtn = wrap.querySelector('.ce-run');
 
-        let activeFileId = files[0].id;
+        let activeFileId = (files && files[0] && (files[0].id || files[0].name)) || 'html';
 
         function renderActiveFile() {
-            const file = files.find(f => f.id === activeFileId);
-            const { numbers, body } = renderCodeLines(file.content, file.lang);
+            const file = files.find(f => (f.id && f.id === activeFileId) || (f.name && f.name === activeFileId) || (f.lang && f.lang === activeFileId)) || files[0];
+            if (!file) return;
+            const { numbers, body } = renderCodeLines(file.content || '', file.lang || 'html');
             lineNumbersEl.innerHTML = numbers;
             codeLinesEl.innerHTML = body;
-            langLabel.textContent = file.lang.toUpperCase();
+            langLabel.textContent = (file.lang || file.name || 'CODE').toUpperCase();
+            tabBtns.forEach(b => b.classList.toggle('active', b.dataset.file === (file.id || file.name)));
         }
 
         function setView(view) {
@@ -2009,21 +2244,23 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
             } else {
                 codeView.classList.remove('hidden');
                 previewView.classList.remove('active');
+                renderActiveFile();
             }
         }
 
         toggleBtns.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+
         tabBtns.forEach(btn => btn.addEventListener('click', () => {
-            tabBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
             activeFileId = btn.dataset.file;
+            setView('code');
             renderActiveFile();
         }));
 
         const copyLabel = copyBtn.querySelector('.ce-label');
         copyBtn.addEventListener('click', () => {
-            const file = files.find(f => f.id === activeFileId);
-            navigator.clipboard.writeText(file.content).then(() => {
+            const file = files.find(f => (f.id && f.id === activeFileId) || (f.name && f.name === activeFileId)) || files[0];
+            if (!file) return;
+            navigator.clipboard.writeText(file.content || '').then(() => {
                 copyBtn.classList.add('copied');
                 copyLabel.textContent = 'Copied';
                 setTimeout(() => { copyBtn.classList.remove('copied'); copyLabel.textContent = 'Copy'; }, 1500);
@@ -2037,43 +2274,118 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         runBtn.addEventListener('click', () => setView('preview'));
 
         renderActiveFile();
-        // Default to the Code tab, matching how a freshly built page is reviewed first.
         setView('code');
 
         return wrap;
     }
 
-    function buildCodeExplanation(files) {
-        const bubble = document.createElement('div');
-        bubble.className = 'chat-bubble code-explanation';
-        bubble.innerHTML = `
-            <p>Here's a single-page landing site, split into three files:</p>
-            <ul>
-                <li><code>index.html</code> — the markup: a navbar, a hero section with a headline and two call-to-action buttons, a three-card features section, and a footer.</li>
-                <li><code>styles.css</code> — layout and styling: a centered max-width layout, a responsive grid for the feature cards, and a mobile breakpoint that stacks everything on small screens.</li>
-                <li><code>script.js</code> — one small enhancement: smooth-scrolling when a nav link points to a section on the same page.</li>
-            </ul>
-            <p>Click <strong>Preview</strong> to see it rendered live, or <strong>Download</strong> to get all three files as a ready-to-host ZIP.</p>
-        `;
-        return bubble;
+    function formatMarkdownMini(text) {
+        if (!text) return '';
+        let s = escapeHtml(text);
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+        return s;
     }
 
     function buildCodeExplanation(files, customExplanation = null) {
         const bubble = document.createElement('div');
-        bubble.className = 'chat-bubble code-explanation';
+        bubble.className = 'chat-bubble code-explanation-bubble';
+
+        let modelName = 'Qwen 2.5 Coder';
+        let summaryParagraphs = [];
+        let fileNotes = {};
+
         if (customExplanation) {
-            bubble.innerHTML = `<p>${escapeHtml(customExplanation).replace(/\n/g, '<br>')}</p>`;
-        } else {
-            bubble.innerHTML = `
-                <p>Here's a single-page site, split into three files:</p>
-                <ul>
-                    <li><code>index.html</code> — Semantic markup structured for your requirements.</li>
-                    <li><code>styles.css</code> — Modern CSS styling, responsive layout, and visual refinements.</li>
-                    <li><code>script.js</code> — Interactive client logic and functionality.</li>
-                </ul>
-                <p>Click <strong>Preview</strong> to see it rendered live, or <strong>Download</strong> to get all three files as a ready-to-host ZIP.</p>
-            `;
+            const lines = customExplanation.split('\n');
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+
+                // Match file bullet notes, e.g. - `index.html`: ...
+                const fileMatch = trimmed.match(/^[-*]\s*`?([a-zA-Z0-9_.-]+)`?:\s*(.+)$/i);
+                if (fileMatch) {
+                    const fName = fileMatch[1].toLowerCase();
+                    const fDesc = fileMatch[2].trim();
+                    fileNotes[fName] = fDesc;
+                    continue;
+                }
+
+                // Match model header
+                const modelMatch = trimmed.match(/Generated with \*\*([^*]+)\*\*/i) || trimmed.match(/Synthesized with \*\*([^*]+)\*\*/i);
+                if (modelMatch) {
+                    modelName = modelMatch[1];
+                    continue;
+                }
+
+                summaryParagraphs.push(trimmed);
+            }
         }
+
+        if (summaryParagraphs.length === 0) {
+            summaryParagraphs.push('Production-ready architecture synthesized to match your specifications with high precision.');
+        }
+
+        const defaultDescriptions = {
+            'index.html': 'Semantic, accessible HTML5 structure with responsive layouts and modern components.',
+            'styles.css': 'Refined responsive stylesheet with design tokens, modern layout rules, and smooth transitions.',
+            'script.js': 'Client interactivity, dynamic DOM event bindings, and UI state management.'
+        };
+
+        const filesList = files && files.length ? files : [
+            { name: 'index.html', lang: 'html' },
+            { name: 'styles.css', lang: 'css' },
+            { name: 'script.js', lang: 'js' }
+        ];
+
+        const fileCardsHtml = filesList.map(f => {
+            const key = (f.name || '').toLowerCase();
+            let desc = fileNotes[key] || (f.id && fileNotes[f.id]) || defaultDescriptions[key] || 'Component source file.';
+            desc = formatMarkdownMini(desc);
+            const lang = (f.lang || (key.endsWith('.css') ? 'css' : (key.endsWith('.js') ? 'js' : 'html'))).toLowerCase();
+            const badgeLabel = lang === 'javascript' ? 'JS' : lang.toUpperCase();
+
+            return `
+                <div class="exp-file-card">
+                    <div class="exp-file-header">
+                        <span class="exp-file-badge exp-badge-${lang}">${badgeLabel}</span>
+                        <span class="exp-file-name">${escapeHtml(f.name)}</span>
+                    </div>
+                    <div class="exp-file-desc">${desc}</div>
+                </div>
+            `;
+        }).join('');
+
+        const summaryHtml = summaryParagraphs.map(p => `<p class="exp-p">${formatMarkdownMini(p)}</p>`).join('');
+
+        bubble.innerHTML = `
+            <div class="exp-card">
+                <div class="exp-card-header">
+                    <div class="exp-model-pill">
+                        <span class="exp-status-dot"></span>
+                        <span class="exp-model-title">${escapeHtml(modelName)}</span>
+                    </div>
+                    <span class="exp-header-tag">Production Bundle</span>
+                </div>
+
+                <div class="exp-body">
+                    ${summaryHtml}
+                </div>
+
+                <div class="exp-files-grid">
+                    ${fileCardsHtml}
+                </div>
+
+                <div class="exp-footer">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span>Switch to <strong>Preview</strong> above to inspect live execution, or click <strong>Download</strong> for the complete bundle.</span>
+                </div>
+            </div>
+        `;
+
         return bubble;
     }
 
@@ -2381,6 +2693,16 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         promptInput.value = '';
         refreshAttachmentsVisibility();
         promptInput.focus();
+
+        if (!currentChatId) {
+            currentChatId = genChatId();
+        }
+        const existingSession = chatSessions.find(c => c.id === currentChatId);
+        const needsModelTitle = !existingSession || !existingSession.hasModelTitle;
+        saveCurrentChat();
+        if (needsModelTitle && text) {
+            requestModelChatTitle(currentChatId, text);
+        }
 
         const currentFlow = currentSelectedModel === 'qwen' ? QWEN_ENGINEERING_FLOW : INSTANT_ENGINEERING_FLOW;
         if (hasAttachments || isCodingTask(text)) {

@@ -470,6 +470,49 @@ def chat_conversational(payload: ConversationalChatPayload):
 
     return {"reply": reply}
 
+class ChatTitlePayload(BaseModel):
+    message: str
+
+@app.post("/api/chat-title")
+def generate_chat_title(payload: ChatTitlePayload):
+    prompt = payload.message.strip()
+    if not prompt:
+        return {"title": "New Chat"}
+
+    llm = get_local_llm()
+    if llm:
+        try:
+            sys_prompt = (
+                "You are an AI chat title generator. "
+                "Read the user prompt and generate a concise, attractive title (2 to 5 words). "
+                "Output ONLY the title text without quotes or period."
+            )
+            res = llm.create_chat_completion(
+                messages=[
+                    {"role": "system", "content": sys_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=20,
+                temperature=0.3
+            )
+            raw_title = res["choices"][0]["message"]["content"].strip()
+            import re
+            title = re.sub(r'^["\'*`#]+|["\'*`#.]+$', '', raw_title).strip()
+            if title and len(title) <= 50:
+                return {"title": title}
+        except Exception:
+            pass
+
+    import re
+    clean = re.sub(r'^(can you|please|help me|could you|i want to|i need to|create a|build a|code a|make a)\s+', '', prompt, flags=re.IGNORECASE).strip()
+    words = clean.split()
+    if len(words) > 5:
+        clean = " ".join(words[:5])
+    title = clean.capitalize()
+    if len(title) > 40:
+        title = title[:37] + "..."
+    return {"title": title or "New Chat"}
+
 @app.post("/api/model/chat")
 def chat_with_model(payload: ChatPayload):
     llm = get_local_llm()

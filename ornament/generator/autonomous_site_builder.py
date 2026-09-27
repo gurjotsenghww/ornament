@@ -308,7 +308,7 @@ class AutonomousSiteBuilder:
         palette = cls.detect_palette(prompt)
         brand, title, subtitle = cls.derive_brand_and_title(prompt)
         qwen_code_result = None
-        model_name = "Ornàment Instant Synthesizer"
+        model_name = "Orn\u00e0ment Instant Synthesizer"
 
         # Incorporate attachments context if provided
         attachment_notes = ""
