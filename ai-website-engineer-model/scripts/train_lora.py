@@ -187,7 +187,7 @@ def train(
         per_device_train_batch_size=hyperparams.get("per_device_train_batch_size", 1),
         gradient_accumulation_steps=hyperparams.get("gradient_accumulation_steps", 16),
         learning_rate=hyperparams.get("learning_rate", 2e-4),
-        warmup_ratio=hyperparams.get("warmup_ratio", 0.03),
+        warmup_steps=hyperparams.get("warmup_steps", 10),
         max_grad_norm=hyperparams.get("max_grad_norm", 0.3),
         num_train_epochs=hyperparams.get("num_train_epochs", 3),
         optim="paged_adamw_8bit",
