@@ -192,6 +192,107 @@ class AutonomousSiteBuilder:
         return None
 
     @classmethod
+    def query_qwen_for_code(cls, prompt: str, attachments_text: str = "") -> Optional[Dict[str, Any]]:
+        """
+        Queries local Qwen2.5-Coder-3B to generate complete, tailored HTML, CSS, JS code
+        specifically matching the user's requirements (e.g. form, calculator, landing page, app).
+        """
+        llm = cls.get_qwen_model()
+        if not llm:
+            return None
+        try:
+            system_prompt = (
+                "You are an elite autonomous web developer and UI engineer powered by Qwen2.5-Coder. "
+                "Write high-quality, modern, accessible, beautiful code tailored EXACTLY to the user's request. "
+                "If the user asks for a specific component (e.g. form, calculator, table, login, dashboard) or a full page, "
+                "build what they asked for directly with clean semantic HTML5, modern CSS, and interactive JavaScript.\n"
+                "Output your response strictly using these code blocks:\n"
+                "```html\n"
+                "<!DOCTYPE html>\n"
+                "<html lang=\"en\">\n"
+                "<head>\n"
+                "  <meta charset=\"UTF-8\" />\n"
+                "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
+                "  <title>...</title>\n"
+                "  <link rel=\"stylesheet\" href=\"styles.css\" />\n"
+                "  <script defer src=\"script.js\"></script>\n"
+                "</head>\n"
+                "<body>\n"
+                "...\n"
+                "</body>\n"
+                "</html>\n"
+                "```\n"
+                "```css\n"
+                "/* styles.css */\n"
+                "...\n"
+                "```\n"
+                "```js\n"
+                "/* script.js */\n"
+                "...\n"
+                "```\n"
+                "Followed by a concise 1-2 sentence explanation of what you created."
+            )
+            user_msg = f"User Request: {prompt}"
+            if attachments_text:
+                user_msg += f"\nAdditional Context:\n{attachments_text}"
+
+            res = llm.create_chat_completion(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_msg}
+                ],
+                max_tokens=950,
+                temperature=0.3
+            )
+            raw = res["choices"][0]["message"]["content"]
+
+            # Extract HTML block
+            html_match = re.search(r"```html\s*([\s\S]*?)```", raw, re.IGNORECASE)
+            html_code = html_match.group(1).strip() if html_match else ""
+
+            # Extract CSS block
+            css_match = re.search(r"```css\s*([\s\S]*?)```", raw, re.IGNORECASE)
+            css_code = css_match.group(1).strip() if css_match else ""
+
+            # Extract JS block
+            js_match = re.search(r"```(?:js|javascript)\s*([\s\S]*?)```", raw, re.IGNORECASE)
+            js_code = js_match.group(1).strip() if js_match else ""
+
+            # Extract inline style or script if not separated
+            if html_code and not css_code:
+                style_match = re.search(r"<style[^>]*>([\s\S]*?)</style>", html_code, re.IGNORECASE)
+                if style_match:
+                    css_code = style_match.group(1).strip()
+            if html_code and not js_code:
+                script_match = re.search(r"<script[^>]*>([\s\S]*?)</script>", html_code, re.IGNORECASE)
+                if script_match and 'src=' not in script_match.group(0).lower():
+                    js_code = script_match.group(1).strip()
+
+            clean_text = re.sub(r"```[\s\S]*?```", "", raw).strip()
+            explanation = clean_text if clean_text else "Custom code synthesized by Qwen 2.5 Coder to match your exact specification."
+
+            if html_code:
+                # Ensure HTML links to styles.css and script.js
+                if css_code and '<link rel="stylesheet" href="styles.css"' not in html_code:
+                    if '</head>' in html_code:
+                        html_code = html_code.replace('</head>', '  <link rel="stylesheet" href="styles.css" />\n</head>')
+                if js_code and '<script defer src="script.js"' not in html_code and '<script src="script.js"' not in html_code:
+                    if '</body>' in html_code:
+                        html_code = html_code.replace('</body>', '  <script defer src="script.js"></script>\n</body>')
+                    else:
+                        html_code += '\n<script defer src="script.js"></script>'
+
+                return {
+                    "html": html_code,
+                    "css": css_code or "/* Custom styles for this project */\nbody { font-family: system-ui, sans-serif; }",
+                    "js": js_code or "// Interactive functionality\nconsole.log('App initialized');",
+                    "explanation": explanation
+                }
+        except Exception as e:
+            print(f"[AutonomousSiteBuilder] Qwen code query exception: {e}")
+        return None
+
+    @classmethod
     def generate_site_bundle(
         cls,
         prompt: str,
@@ -206,8 +307,7 @@ class AutonomousSiteBuilder:
         """
         palette = cls.detect_palette(prompt)
         brand, title, subtitle = cls.derive_brand_and_title(prompt)
-        features = None
-        qwen_explanation = None
+        qwen_code_result = None
         model_name = "Ornàment Instant Synthesizer"
 
         # Incorporate attachments context if provided
@@ -220,42 +320,48 @@ class AutonomousSiteBuilder:
                     attachment_notes += f"\n<!-- Attached context: {c} -->"
                     attachment_text += f"{c}\n"
 
-        # Query Qwen 2.5 Coder if requested
+        # Query Qwen 2.5 Coder for ACTUAL code if requested
         if model and model.lower() in ["qwen", "qwen2.5", "neural"]:
-            qwen_res = cls.query_qwen(prompt, attachment_text)
-            if qwen_res:
+            qwen_code_result = cls.query_qwen_for_code(prompt, attachment_text)
+            if qwen_code_result:
                 model_name = "Qwen 2.5 Coder (Neural 3B)"
-                if qwen_res.get("brand"):
-                    brand = qwen_res["brand"].strip()
-                if qwen_res.get("title"):
-                    title = qwen_res["title"].strip()
-                if qwen_res.get("subtitle"):
-                    subtitle = qwen_res["subtitle"].strip()
-                pt = str(qwen_res.get("palette_theme", "")).lower()
-                if pt in cls.PALETTES:
-                    palette = cls.PALETTES[pt]
-                if qwen_res.get("features") and isinstance(qwen_res["features"], list) and len(qwen_res["features"]) >= 3:
-                    features = qwen_res["features"][:3]
-                if qwen_res.get("explanation"):
-                    qwen_explanation = qwen_res["explanation"].strip()
 
         # Sanitize project slug
         if not project_name:
             slug = re.sub(r"[^a-z0-9]+", "-", brand.lower()).strip("-")
             project_name = slug if slug else f"site-{int(Path('.').stat().st_mtime)}"
 
-        html_content = cls._build_html(
-            brand=brand,
-            title=title,
-            subtitle=subtitle,
-            palette=palette,
-            prompt=prompt,
-            attachment_notes=attachment_notes,
-            features=features,
-            model_name=model_name
-        )
-        css_content = cls._build_css(palette)
-        js_content = cls._build_js(brand)
+        if qwen_code_result:
+            html_content = qwen_code_result["html"]
+            css_content = qwen_code_result["css"]
+            js_content = qwen_code_result["js"]
+            explanation = (
+                f"Generated with **{model_name}** tailored specifically to your request.\n\n"
+                f"{qwen_code_result['explanation']}\n\n"
+                f"- `index.html`: Production-ready markup structured specifically for your prompt.\n"
+                f"- `styles.css`: Bespoke modern styling, responsive layout, and visual refinements.\n"
+                f"- `script.js`: Interactive behavior and client logic."
+            )
+        else:
+            # Fallback to deterministic design system generator
+            html_content = cls._build_html(
+                brand=brand,
+                title=title,
+                subtitle=subtitle,
+                palette=palette,
+                prompt=prompt,
+                attachment_notes=attachment_notes,
+                features=None,
+                model_name=model_name
+            )
+            css_content = cls._build_css(palette)
+            js_content = cls._build_js(brand)
+            explanation = (
+                f"Synthesized with **{model_name}** for **{brand}** applying the **60-30-10** design system rule with the **{palette['name']}** color theme.\n\n"
+                f"- `index.html`: Responsive HTML5 markup with interactive sections and modern hierarchy.\n"
+                f"- `styles.css`: Modern CSS with custom properties, fluid clamp() typography, and mobile breakpoints.\n"
+                f"- `script.js`: Client-side interactivity including smooth anchor scrolling and form notifications."
+            )
 
         files = [
             {"id": "html", "name": "index.html", "lang": "html", "content": html_content},
@@ -288,22 +394,6 @@ class AutonomousSiteBuilder:
         except Exception:
             pass
 
-        if qwen_explanation:
-            explanation = (
-                f"Generated with **{model_name}** for **{brand}** applying the **60-30-10** design system with the **{palette['name']}** color theme.\n\n"
-                f"{qwen_explanation}\n\n"
-                f"- `index.html`: Semantic HTML5 markup containing a responsive frosted navigation bar, high-impact hero header, bespoke feature cards, metrics telemetry, and an interactive lead capture.\n"
-                f"- `styles.css`: Modern CSS with custom properties, fluid `clamp()` typography, CSS grid & flexbox layouts, glassmorphism blur effects, and full mobile breakpoints.\n"
-                f"- `script.js`: Client-side interactivity including smooth anchor scrolling, mobile navigation toggle, tabbed showcase switching, and real-time form toast notifications."
-            )
-        else:
-            explanation = (
-                f"Crafted a production-ready responsive website for **{brand}** applying the **60-30-10** design system rule with the **{palette['name']}** color theme. "
-                f"Synthesized by **{model_name}** across three decoupled files:\n"
-                f"- `index.html`: Semantic HTML5 markup containing a responsive frosted navigation bar, high-impact hero header, interactive feature cards, metrics telemetry, and an interactive lead capture.\n"
-                f"- `styles.css`: Modern CSS with custom properties, fluid `clamp()` typography, CSS grid & flexbox layouts, glassmorphism blur effects, and full mobile breakpoints.\n"
-                f"- `script.js`: Client-side interactivity including smooth anchor scrolling, mobile navigation toggle, tabbed showcase switching, and real-time form toast notifications."
-            )
 
         return {
             "status": "success",

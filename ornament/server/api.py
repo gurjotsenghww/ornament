@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, Response
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from typing import Optional, Dict, Any, List
@@ -493,14 +494,36 @@ def build_datasets_endpoint(version: str = "dataset-v0.2"):
     pipeline = TrainingDataPipeline()
     return pipeline.build_datasets(version=version)
 
-@app.get("/dashboard", response_class=HTMLResponse)
+# Mount React build assets if built
+_react_dist = settings.base_dir / "frontend" / "studio-react" / "dist"
+if (_react_dist / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(_react_dist / "assets")), name="react_assets")
+
 @app.get("/legacy-studio", response_class=HTMLResponse)
+def legacy_studio_page():
+    studio_index = settings.base_dir / "frontend" / "studio" / "index.html"
+    if studio_index.exists():
+        return FileResponse(str(studio_index), media_type="text/html")
+    return Response(status_code=404)
+
+@app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 def index_page(view: Optional[str] = None):
-    if view != "legacy":
+    if view == "legacy":
         studio_index = settings.base_dir / "frontend" / "studio" / "index.html"
         if studio_index.exists():
             return FileResponse(str(studio_index), media_type="text/html")
+
+    # Primary: Compiled React Studio
+    react_index = settings.base_dir / "frontend" / "studio-react" / "dist" / "index.html"
+    if react_index.exists():
+        return FileResponse(str(react_index), media_type="text/html")
+
+    # Secondary: Vanilla Studio index.html
+    studio_index = settings.base_dir / "frontend" / "studio" / "index.html"
+    if studio_index.exists():
+        return FileResponse(str(studio_index), media_type="text/html")
+
     ensure_preview_server("demo-portfolio")
     return """<!DOCTYPE html>
 <html lang="en" class="dark">

@@ -573,9 +573,8 @@
 
     /* ================= AI ACTIVITY TIMELINE PANEL ================= */
     .activity-panel {
-        width: fit-content;
-        min-width: 300px;
-        max-width: 360px;
+        width: 100%;
+        max-width: 560px;
         background: transparent;
         border: none;
         overflow: visible;
@@ -603,45 +602,42 @@
     .activity-chevron {
         width: 16px; height: 16px; color: #9a9aa0; flex-shrink: 0; margin-left: auto;
         stroke: currentColor; stroke-width: 2; fill: none;
-        transition: transform 0.2s ease;
+        transition: transform 0.3s ease;
     }
     .activity-panel.collapsed .activity-chevron { transform: rotate(-90deg); }
 
     .activity-body {
-        max-height: 320px; opacity: 1;
-        padding: 0 2px 6px;
-        transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+        max-height: 400px; opacity: 1;
+        padding: 0 2px 10px;
+        transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+        overflow: hidden;
     }
     .activity-panel.collapsed .activity-body {
-        max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; overflow: hidden;
+        max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0;
     }
 
-    .activity-list { position: relative; display: flex; flex-direction: column; }
-    .activity-list::before {
-        content: '';
-        position: absolute; left: 9px; top: 12px; bottom: 12px; width: 1px;
-        background-image: linear-gradient(to bottom, #dcdce0 55%, transparent 45%);
-        background-size: 1px 7px; background-repeat: repeat-y;
-    }
+    .activity-list { position: relative; display: flex; flex-direction: column; gap: 2px; }
 
     .activity-item {
         position: relative;
-        display: flex; align-items: center; gap: 12px;
-        padding: 6px 0;
+        display: flex; flex-direction: column; gap: 5px;
+        padding: 8px 0 8px 32px;
         font-size: 13.5px; color: #c4c4c9;
-        transition: color 0.25s ease;
+        transition: color 0.4s ease;
     }
-    .activity-item[data-state="done"] { color: #77777d; }
-    .activity-item[data-state="active"] { color: #16171a; font-weight: 700; }
+    .activity-item[data-state="done"]     { color: #77777d; }
+    .activity-item[data-state="active"]   { color: #16171a; }
     .activity-item[data-state="upcoming"] { color: #c4c4c9; }
 
+    /* Left timeline dot */
     .activity-circle {
-        position: relative; z-index: 1; flex-shrink: 0;
+        position: absolute; left: 0; top: 12px; z-index: 1;
         width: 20px; height: 20px; border-radius: 50%;
         background: #fff;
         display: flex; align-items: center; justify-content: center;
         border: 2px solid #e4e4e7;
-        transition: border-color 0.25s ease, background 0.25s ease;
+        transition: border-color 0.4s ease, background 0.4s ease;
+        flex-shrink: 0;
     }
     .activity-item[data-state="done"] .activity-circle {
         border-color: transparent; background: #22c55e;
@@ -649,16 +645,66 @@
     .activity-circle .icon-check {
         width: 11px; height: 11px; stroke: #fff; stroke-width: 3;
         fill: none; opacity: 0; transform: scale(0.5);
-        transition: opacity 0.2s ease, transform 0.2s ease;
+        transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
     }
     .activity-item[data-state="done"] .icon-check { opacity: 1; transform: scale(1); }
 
     .activity-item[data-state="active"] .activity-circle {
         border-color: #16171a;
-        border-style: dashed;
-        animation: activitySpin 3s linear infinite;
+        box-shadow: 0 0 0 3px rgba(22,23,26,0.10);
+    }
+
+    /* Spinning ring for active */
+    .activity-item[data-state="active"] .activity-circle::after {
+        content: '';
+        position: absolute; inset: -3px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        border-top-color: #6366f1;
+        animation: activitySpin 0.9s linear infinite;
     }
     @keyframes activitySpin { to { transform: rotate(360deg); } }
+
+    /* Step label text */
+    .activity-label {
+        font-weight: 500;
+        transition: font-weight 0.3s;
+    }
+    .activity-item[data-state="active"] .activity-label {
+        font-weight: 700;
+        animation: activityPulse 2s ease-in-out infinite;
+    }
+    @keyframes activityPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    /* Progress bar per step */
+    .activity-progress-wrap {
+        display: none;
+        height: 3px; border-radius: 3px;
+        background: rgba(22,23,26,0.08);
+        overflow: hidden;
+        width: 100%;
+    }
+    .activity-item[data-state="active"] .activity-progress-wrap { display: block; }
+    .activity-progress-bar {
+        height: 100%; border-radius: 3px;
+        background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        width: 0%;
+        transition: width 0.4s ease;
+    }
+
+    /* Connector line */
+    .activity-item::before {
+        content: '';
+        position: absolute; left: 9px; top: 32px; bottom: -8px; width: 2px;
+        background: #e4e4e7;
+        transition: background 0.4s ease;
+    }
+    .activity-item:last-child::before { display: none; }
+    .activity-item[data-state="done"]::before { background: #22c55e; }
+    .activity-item[data-state="active"]::before { background: linear-gradient(to bottom, #6366f1, #e4e4e7); }
 
     /* ================= CODE EXPLORER (Preview / Code result) ================= */
     .chat-bubble.code-explorer-bubble {
@@ -666,7 +712,7 @@
         border-radius: 16px !important;
         overflow: hidden;
         width: 100%;
-        max-width: 640px;
+        max-width: 720px;
     }
 
     .code-explorer {
@@ -674,13 +720,16 @@
         color: #e4e4e7;
         display: flex; flex-direction: column;
         font-size: 13px;
+        border-radius: 16px;
+        overflow: hidden;
     }
 
     .ce-topbar {
         display: flex; align-items: center; justify-content: space-between;
-        gap: 12px; padding: 12px 14px;
+        gap: 12px; padding: 10px 14px;
         border-bottom: 1px solid rgba(255,255,255,0.07);
         flex-wrap: wrap;
+        min-height: 50px;
     }
     .ce-toggle {
         display: flex; gap: 4px;
@@ -693,25 +742,28 @@
         color: #a0a0a6; font-size: 12.5px; font-weight: 600;
         padding: 6px 12px; border-radius: 100px;
         transition: background 0.15s ease, color 0.15s ease;
+        white-space: nowrap;
     }
     .ce-toggle-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
     .ce-toggle-btn.active { background: #fff; color: #111; }
 
-    .ce-topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .ce-topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .ce-lang {
         display: flex; align-items: center; gap: 4px;
-        font-size: 12.5px; font-weight: 600; color: #d4d4d8;
+        font-size: 12px; font-weight: 600; color: #d4d4d8;
+        background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 6px;
     }
     .ce-lang svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
 
     .ce-action {
         display: flex; align-items: center; gap: 6px;
-        background: transparent; border: none; cursor: pointer;
-        color: #b8b8be; font-size: 12.5px; font-weight: 500;
-        padding: 4px 2px;
-        transition: color 0.15s ease;
+        background: rgba(255,255,255,0.06); border: none; cursor: pointer;
+        color: #b8b8be; font-size: 12px; font-weight: 500;
+        padding: 5px 10px; border-radius: 7px;
+        transition: color 0.15s ease, background 0.15s ease;
+        white-space: nowrap;
     }
-    .ce-action:hover { color: #fff; }
+    .ce-action:hover { color: #fff; background: rgba(255,255,255,0.12); }
     .ce-action svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
     .ce-action.copied { color: #34d399; }
 
@@ -719,10 +771,11 @@
         display: flex; align-items: center; gap: 6px;
         background: #fff; color: #111; border: none; cursor: pointer;
         font-size: 12.5px; font-weight: 700;
-        padding: 7px 14px; border-radius: 100px;
-        transition: transform 0.1s ease;
+        padding: 7px 16px; border-radius: 100px;
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        white-space: nowrap;
     }
-    .ce-run:hover { transform: translateY(-1px); }
+    .ce-run:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .ce-run svg { width: 12px; height: 12px; fill: currentColor; }
 
     .ce-tabs {
@@ -749,7 +802,7 @@
 
     .ce-body { position: relative; }
     .ce-code-view {
-        max-height: 360px; overflow: auto;
+        max-height: 420px; overflow: auto;
         background: #121214;
     }
     .ce-code-view::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -772,7 +825,7 @@
         border-right: 1px solid rgba(255,255,255,0.06);
         margin-right: 16px;
     }
-    .ce-code-lines { flex: 1; padding-right: 20px; }
+    .ce-code-lines { flex: 1; padding-right: 20px; min-width: 0; }
     .ce-code-lines div, .ce-line-numbers div { min-height: 1.65em; }
 
     .tok-tag { color: #f4708d; }
@@ -788,10 +841,11 @@
     .ce-preview-view { display: none; background: #fff; }
     .ce-preview-view.active { display: block; }
     .ce-code-view.hidden { display: none; }
-    .ce-iframe { width: 100%; height: 360px; border: none; display: block; background: #fff; }
+    .ce-iframe { width: 100%; height: 420px; border: none; display: block; background: #fff; }
 
     .code-explanation {
-        font-size: 13.5px; line-height: 1.55; color: #333;
+        font-size: 13.5px; line-height: 1.6; color: #333;
+        max-width: 720px;
     }
     .code-explanation p { margin: 0 0 8px; }
     .code-explanation p:last-child { margin-bottom: 0; }
@@ -2397,6 +2451,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                                 <svg class="icon-check" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                             </span>
                             <span class="activity-label">${label}</span>
+                            <div class="activity-progress-wrap"><div class="activity-progress-bar" id="prog-${i}"></div></div>
                         </div>
                     `).join('')}
                 </div>
@@ -2416,12 +2471,29 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
 
     function updateActivityPanel(panel, flow, activeIndex) {
         panel._items.forEach((item, i) => {
-            item.dataset.state = i < activeIndex ? 'done' : (i === activeIndex ? 'active' : 'upcoming');
+            const bar = item.querySelector('.activity-progress-bar');
+            if (i < activeIndex) {
+                item.dataset.state = 'done';
+                if (bar) bar.style.width = '100%';
+            } else if (i === activeIndex) {
+                item.dataset.state = 'active';
+                if (bar) {
+                    bar.style.width = '0%';
+                    setTimeout(() => { if (bar) bar.style.width = '85%'; }, 50);
+                }
+            } else {
+                item.dataset.state = 'upcoming';
+                if (bar) bar.style.width = '0%';
+            }
         });
     }
 
     function finalizeActivityPanel(panel, flow, elapsedSeconds) {
-        panel._items.forEach(item => item.dataset.state = 'done');
+        panel._items.forEach(item => {
+            item.dataset.state = 'done';
+            const bar = item.querySelector('.activity-progress-bar');
+            if (bar) bar.style.width = '100%';
+        });
         panel._statusEl.textContent = flow.doneLabel;
         panel.classList.add('collapsed');
         panel.querySelector('.activity-header').setAttribute('aria-expanded', 'false');
@@ -2440,6 +2512,9 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         scrollChatToBottom();
 
         const startedAt = Date.now();
+        const isQwen = currentSelectedModel === 'qwen';
+        // Qwen takes ~25-35s on CPU, Instant takes ~1.5s
+        const stepInterval = isQwen ? 5800 : 450;
         let stepIndex = 0;
         updateActivityPanel(panel, flow, 0);
 
@@ -2449,7 +2524,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                 updateActivityPanel(panel, flow, stepIndex);
                 scrollChatToBottom();
             }
-        }, 550);
+        }, stepInterval);
 
         try {
             const res = await fetch('/api/generate-site', {
@@ -2466,6 +2541,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
             const data = await res.json();
             clearInterval(stepTimer);
 
+            // Transition to final validating step
             updateActivityPanel(panel, flow, flow.items.length - 1);
             setTimeout(() => {
                 const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
@@ -2476,7 +2552,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                 reply.appendChild(explanation);
                 scrollChatToBottom();
                 saveCurrentChat();
-            }, 300);
+            }, 600);
 
         } catch (err) {
             console.warn('Backend unavailable, using client fallback:', err);
