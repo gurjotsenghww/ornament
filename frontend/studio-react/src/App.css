@@ -1,4 +1,4 @@
-﻿    * {
+    * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
@@ -182,7 +182,7 @@
         overflow-y: auto; overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
         position: relative;
-        background: #e8ecf1 url('bg.jpg') center/cover no-repeat fixed;
+        background: #e8ecf1 url('/bg.jpg') center/cover no-repeat fixed;
     }
     .main::-webkit-scrollbar { width: 8px; }
     .main::-webkit-scrollbar-track { background: transparent; }

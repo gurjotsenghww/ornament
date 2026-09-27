@@ -96,10 +96,19 @@ export const App: React.FC = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync sidebarCollapsed
+  // Sync sidebarCollapsed & body classes
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', String(collapsed));
+    document.body.classList.toggle('collapsed', collapsed);
   }, [collapsed]);
+
+  useEffect(() => {
+    document.body.classList.toggle('drawer-open', drawerOpen);
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    document.body.classList.toggle('chat-mode', messages.length > 0);
+  }, [messages.length]);
 
   // Sync profile
   useEffect(() => {
@@ -695,7 +704,7 @@ export const App: React.FC = () => {
       </aside>
 
       {/* ================= MAIN ================= */}
-      <main className="main">
+      <main className="main" style={{ background: "#e8ecf1 url('/bg.jpg') center/cover no-repeat fixed" }}>
         {/* Top Header */}
         <header className="top-header">
           <button
