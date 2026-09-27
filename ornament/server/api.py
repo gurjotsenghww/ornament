@@ -66,7 +66,7 @@ async def generate_portfolio(project_name: str = "demo-portfolio", intentional_b
     
     # Initialize Git checkpoint
     git_mgr = GitCheckpointManager(p_dir)
-    git_mgr.create_checkpoint("Initial developer portfolio generated", agent_id="main_agent")
+    git_mgr.create_checkpoint("Developer portfolio generated", agent_id="main_agent")
     
     # Start or restart preview server
     if project_name not in active_preview_servers:
@@ -80,6 +80,55 @@ async def generate_portfolio(project_name: str = "demo-portfolio", intentional_b
         "files_count": len(result["files_created"]),
         "intentional_bug": intentional_bug,
         "preview_url": active_preview_servers[project_name].url
+    }
+
+@app.post("/api/projects/generate-ecommerce")
+async def generate_ecommerce(project_name: str = "demo-ecommerce"):
+    from ornament.generator.ecommerce_generator import EcommerceGenerator
+    p_dir = get_project_dir(project_name)
+    result = EcommerceGenerator.generate(p_dir)
+    git_mgr = GitCheckpointManager(p_dir)
+    git_mgr.create_checkpoint("E-Commerce store generated", agent_id="main_agent")
+    if project_name not in active_preview_servers:
+        server = DevPreviewServer(p_dir, port=3458)
+        server.start()
+        active_preview_servers[project_name] = server
+    return {
+        "status": "success",
+        "project": project_name,
+        "files_count": result["files_count"],
+        "preview_url": active_preview_servers[project_name].url
+    }
+
+@app.post("/api/projects/generate-saas")
+async def generate_saas(project_name: str = "demo-saas"):
+    from ornament.generator.saas_generator import SaasGenerator
+    p_dir = get_project_dir(project_name)
+    result = SaasGenerator.generate(p_dir)
+    git_mgr = GitCheckpointManager(p_dir)
+    git_mgr.create_checkpoint("SaaS platform generated", agent_id="main_agent")
+    if project_name not in active_preview_servers:
+        server = DevPreviewServer(p_dir, port=3459)
+        server.start()
+        active_preview_servers[project_name] = server
+    return {
+        "status": "success",
+        "project": project_name,
+        "files_count": result["files_count"],
+        "preview_url": active_preview_servers[project_name].url
+    }
+
+@app.post("/api/projects/{project_name}/run-audits")
+async def run_audits(project_name: str):
+    from ornament.testing.auditors import SiteAuditor
+    p_dir = get_project_dir(project_name)
+    seo = SiteAuditor.run_seo_audit(p_dir)
+    perf = SiteAuditor.run_performance_audit(p_dir)
+    a11y = SiteAuditor.run_accessibility_audit(p_dir)
+    return {
+        "seo": seo.model_dump(),
+        "performance": perf.model_dump(),
+        "accessibility": a11y.model_dump()
     }
 
 @app.get("/api/projects/{project_name}/files")
@@ -222,17 +271,26 @@ def index_page():
       <div class="p-4 rounded-xl border border-surfaceBorder bg-surface space-y-3">
         <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-400">Autonomous Actions</h2>
         <div class="space-y-2">
-          <button onclick="generatePortfolio(false)" class="w-full py-2 px-3 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition">
+          <button onclick="generatePortfolio(false)" class="w-full py-1.5 px-3 text-xs rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition text-left">
             1. Generate Developer Portfolio
           </button>
-          <button onclick="generatePortfolio(true)" class="w-full py-2 px-3 text-sm rounded-lg bg-amber-600/80 hover:bg-amber-600 text-white font-medium transition">
-            2. Introduce Route Bug (/contact-us)
+          <button onclick="generateEcommerce()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition text-left">
+            2. Generate E-Commerce Store
           </button>
-          <button onclick="runTests()" class="w-full py-2 px-3 text-sm rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium transition border border-surfaceBorder">
-            3. Run Multi-Level Tests (Playwright)
+          <button onclick="generateSaas()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium transition text-left">
+            3. Generate SaaS Platform
           </button>
-          <button onclick="runRepairLoop()" class="w-full py-2 px-3 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition">
-            4. Run Autonomous Repair Loop
+          <button onclick="generatePortfolio(true)" class="w-full py-1.5 px-3 text-xs rounded-lg bg-amber-600/80 hover:bg-amber-600 text-white font-medium transition text-left">
+            4. Introduce Route Bug (/contact-us)
+          </button>
+          <button onclick="runTests()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium transition border border-surfaceBorder text-left">
+            5. Run Multi-Level Tests (Playwright)
+          </button>
+          <button onclick="runRepairLoop()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium transition text-left">
+            6. Run Autonomous Repair Loop
+          </button>
+          <button onclick="runAudits()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700 text-indigo-300 font-medium transition border border-surfaceBorder text-left">
+            7. Run SEO, Perf & A11y Audits
           </button>
         </div>
       </div>
@@ -345,6 +403,47 @@ def index_page():
       loadHistory();
       loadDiff();
       alert(withBug ? 'Portfolio generated with INTENTIONAL ROUTE BUG (/contact-us)!' : 'Portfolio generated successfully!');
+    }
+
+    async function generateEcommerce() {
+      const res = await fetch('/api/projects/generate-ecommerce?project_name=demo-portfolio', { method: 'POST' });
+      const data = await res.json();
+      refreshPreview();
+      loadFiles();
+      loadHistory();
+      loadDiff();
+      alert('E-Commerce Store generated successfully!');
+    }
+
+    async function generateSaas() {
+      const res = await fetch('/api/projects/generate-saas?project_name=demo-portfolio', { method: 'POST' });
+      const data = await res.json();
+      refreshPreview();
+      loadFiles();
+      loadHistory();
+      loadDiff();
+      alert('SaaS Platform generated successfully!');
+    }
+
+    async function runAudits() {
+      const el = document.getElementById('test-results');
+      el.innerHTML = '<div class="text-indigo-400 animate-pulse">Running SEO, Performance, and Accessibility audits...</div>';
+      const res = await fetch('/api/projects/demo-portfolio/run-audits', { method: 'POST' });
+      const data = await res.json();
+      el.innerHTML = `
+        <div class="p-2 rounded ${data.seo.status === 'PASS' ? 'bg-green-950/40 border-green-800 text-green-300' : 'bg-yellow-950/40 border-yellow-800 text-yellow-300'} border">
+          <div class="font-bold flex justify-between"><span>SEO Audit</span><span>${data.seo.status} (${data.seo.score}/100)</span></div>
+          <div class="text-[11px] mt-1 text-zinc-400">${data.seo.issues.length} issues found</div>
+        </div>
+        <div class="p-2 rounded ${data.performance.status === 'PASS' ? 'bg-green-950/40 border-green-800 text-green-300' : 'bg-yellow-950/40 border-yellow-800 text-yellow-300'} border mt-2">
+          <div class="font-bold flex justify-between"><span>Performance Audit</span><span>${data.performance.status} (${data.performance.score}/100)</span></div>
+          <div class="text-[11px] mt-1 text-zinc-400">${data.performance.issues.length} recommendations</div>
+        </div>
+        <div class="p-2 rounded ${data.accessibility.status === 'PASS' ? 'bg-green-950/40 border-green-800 text-green-300' : 'bg-yellow-950/40 border-yellow-800 text-yellow-300'} border mt-2">
+          <div class="font-bold flex justify-between"><span>Accessibility Audit</span><span>${data.accessibility.status} (${data.accessibility.score}/100)</span></div>
+          <div class="text-[11px] mt-1 text-zinc-400">${data.accessibility.issues.length} checks</div>
+        </div>
+      `;
     }
 
     async function runTests() {

@@ -37,13 +37,57 @@ def cmd_telemetry(args):
 
 def cmd_generate(args):
     target = settings.workspace_dir / args.name
-    console.print(f"[bold cyan][*] Generating developer portfolio into: {target}[/bold cyan]")
-    res = PortfolioGenerator.generate(target, intentional_bug=args.bug)
+    site_type = getattr(args, "type", "portfolio").lower()
+
+    if site_type == "ecommerce":
+        from ornament.generator.ecommerce_generator import EcommerceGenerator
+        console.print(f"[bold cyan][*] Generating E-Commerce Store into: {target}[/bold cyan]")
+        res = EcommerceGenerator.generate(target)
+        count = res["files_count"]
+    elif site_type == "saas":
+        from ornament.generator.saas_generator import SaasGenerator
+        console.print(f"[bold cyan][*] Generating SaaS Platform into: {target}[/bold cyan]")
+        res = SaasGenerator.generate(target)
+        count = res["files_count"]
+    else:
+        console.print(f"[bold cyan][*] Generating Developer Portfolio into: {target}[/bold cyan]")
+        res = PortfolioGenerator.generate(target, intentional_bug=args.bug)
+        count = len(res["files_created"])
+
     git_mgr = GitCheckpointManager(target)
-    cp = git_mgr.create_checkpoint(f"Portfolio generated (intentional_bug={args.bug})", agent_id="main_agent")
-    console.print(f"[bold green][OK] Generation complete ({len(res['files_created'])} files). Git Checkpoint: {cp[:8]}[/bold green]")
-    if args.bug:
+    cp = git_mgr.create_checkpoint(f"{site_type.title()} generated", agent_id="main_agent")
+    console.print(f"[bold green][OK] Generation complete ({count} files). Git Checkpoint: {cp[:8]}[/bold green]")
+    if site_type == "portfolio" and args.bug:
         console.print("[bold red][!] Controlled Bug Introduced: Navbar contact button points to /contact-us instead of /contact[/bold red]")
+
+def cmd_audit(args):
+    from ornament.testing.auditors import SiteAuditor
+    target = settings.workspace_dir / args.name
+    console.print(f"[bold cyan][*] Running SEO, Performance, and Accessibility Audits on: {target}[/bold cyan]")
+    
+    seo = SiteAuditor.run_seo_audit(target)
+    perf = SiteAuditor.run_performance_audit(target)
+    a11y = SiteAuditor.run_accessibility_audit(target)
+
+    table = Table(title="Website Engineering Audits")
+    table.add_column("Category", style="cyan")
+    table.add_column("Status", style="bold")
+    table.add_column("Score", style="white")
+    table.add_column("Issues / Notices", style="yellow")
+
+    for rep in [seo, perf, a11y]:
+        style = "green" if rep.status == "PASS" else ("yellow" if rep.status == "WARNING" else "red")
+        issue_summary = "; ".join([f"[{i.severity}] {i.message}" for i in rep.issues[:2]]) or "Clean"
+        table.add_row(rep.category, f"[{style}]{rep.status}[/{style}]", f"{rep.score:.1f}/100", issue_summary)
+
+    console.print(table)
+
+def cmd_benchmark(args):
+    import subprocess
+    target = settings.workspace_dir / args.name
+    console.print(f"[bold cyan][*] Running Ornàment 5-Dimension Evaluation Benchmark on: {target}[/bold cyan]")
+    bench_script = settings.base_dir / "ai-website-engineer-model" / "evaluation" / "benchmark_suite.py"
+    subprocess.run([sys.executable, str(bench_script), "--project", f"workspace/{args.name}"])
 
 def cmd_test(args):
     target = settings.workspace_dir / args.name
@@ -116,7 +160,16 @@ def main():
     # generate
     gen = subparsers.add_parser("generate", help="Scaffold a website project")
     gen.add_argument("--name", default="demo-portfolio", help="Project folder name")
+    gen.add_argument("--type", choices=["portfolio", "ecommerce", "saas"], default="portfolio", help="Website category (portfolio, ecommerce, saas)")
     gen.add_argument("--bug", action="store_true", help="Introduce intentional route mismatch bug for debugging demo")
+
+    # audit
+    aud = subparsers.add_parser("audit", help="Run SEO, Performance, and Accessibility audits")
+    aud.add_argument("--name", default="demo-portfolio")
+
+    # benchmark
+    bm = subparsers.add_parser("benchmark", help="Run fixed 5-dimension evaluation benchmark")
+    bm.add_argument("--name", default="demo-portfolio")
 
     # test
     tst = subparsers.add_parser("test", help="Run multi-level test suite")
@@ -136,6 +189,10 @@ def main():
         cmd_telemetry(args)
     elif args.command == "generate":
         cmd_generate(args)
+    elif args.command == "audit":
+        cmd_audit(args)
+    elif args.command == "benchmark":
+        cmd_benchmark(args)
     elif args.command == "test":
         cmd_test(args)
     elif args.command == "repair":
