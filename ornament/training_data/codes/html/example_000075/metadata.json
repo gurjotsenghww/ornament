@@ -1,1 +1,29 @@
-{"category": "navigation", "difficulty": "medium"}
+{
+  "id": "html_000075",
+  "language": "html",
+  "category": "cards",
+  "subcategory": "luxury",
+  "difficulty": "medium",
+  "description": "Build a production-quality, accessible cards component in neon_emerald style.",
+  "tags": [
+    "html",
+    "cards",
+    "production-quality"
+  ],
+  "framework": "html-css-tailwind",
+  "source_type": "generated",
+  "license": "MIT",
+  "source_url": "https://github.com/ornament/curated-web-data",
+  "collected_at": "2026-09-27T05:10:11.849983+00:00",
+  "validated": true,
+  "quality": {
+    "syntax": 1.0,
+    "structure": 0.64,
+    "complexity": 0.95,
+    "uniqueness": 0.9,
+    "documentation": 0.5,
+    "overall": 0.835,
+    "passed": true,
+    "validation_errors": []
+  }
+}

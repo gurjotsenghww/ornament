@@ -62,6 +62,19 @@ workspace/*
 *.safetensors
 *.gguf
 
+# Training Data Artifacts (Section 25)
+ornament/training_data/codes/*/*
+!ornament/training_data/codes/*/.gitkeep
+ornament/training_data/debugging/*/*
+!ornament/training_data/debugging/.gitkeep
+ornament/training_data/projects/*/*
+!ornament/training_data/projects/*/.gitkeep
+ornament/training_data/datasets/*.jsonl
+ornament/training_data/storage/crawl_state.json
+ornament/training_data/processed/dedup_index.json
+ornament/training_data/rejected/*
+!ornament/training_data/rejected/.gitkeep
+
 # IDE
 .idea/
 .vscode/

@@ -1,1 +1,0 @@
-.cards-170 { display: flex; }

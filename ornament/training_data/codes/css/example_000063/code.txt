@@ -1,1 +1,0 @@
-.typography-62 { display: flex; }

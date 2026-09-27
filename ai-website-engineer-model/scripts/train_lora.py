@@ -18,8 +18,12 @@ def train(config_path: Path, dataset_path: Path, output_dir: Path, dry_run: bool
     print(f"    LoRA Rank (r): {config.get('lora_r')}, Alpha: {config.get('lora_alpha')}")
     
     print(f"[*] Loading dataset: {dataset_path}")
-    with open(dataset_path, "r", encoding="utf-8") as f:
-        dataset = json.load(f)
+    if str(dataset_path).endswith(".jsonl"):
+        with open(dataset_path, "r", encoding="utf-8") as f:
+            dataset = [json.loads(line) for line in f if line.strip()]
+    else:
+        with open(dataset_path, "r", encoding="utf-8") as f:
+            dataset = json.load(f)
     print(f"    Total training examples loaded: {len(dataset)}")
     
     output_dir.mkdir(parents=True, exist_ok=True)

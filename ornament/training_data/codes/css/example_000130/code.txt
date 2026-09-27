@@ -1,1 +1,0 @@
-.grid-129 { display: flex; }

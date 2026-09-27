@@ -1,0 +1,41 @@
+{
+  "model_family": "Qwen2.5-Coder",
+  "base_model": "Qwen/Qwen2.5-Coder-3B-Instruct",
+  "hardware_profile": "NVIDIA GeForce RTX 3050 Laptop GPU (6GB VRAM)",
+  "quantization": "4-bit (bitsandbytes / bnb-4bit)",
+  "lora_r": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "target_modules": [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj"
+  ],
+  "bias": "none",
+  "task_type": "CAUSAL_LM",
+  "training_hyperparameters": {
+    "per_device_train_batch_size": 1,
+    "gradient_accumulation_steps": 16,
+    "learning_rate": 0.0002,
+    "warmup_ratio": 0.03,
+    "max_grad_norm": 0.3,
+    "num_train_epochs": 3,
+    "optim": "paged_adamw_8bit",
+    "fp16": true,
+    "bf16": false,
+    "max_seq_length": 2048,
+    "logging_steps": 10,
+    "save_strategy": "epoch",
+    "estimated_vram_usage_mb": 3850
+  },
+  "datasets": {
+    "train": "ornament/training_data/datasets/html_train.jsonl",
+    "validation": "ornament/training_data/datasets/html_validation.jsonl",
+    "test": "ornament/training_data/datasets/html_test.jsonl",
+    "debugging": "ornament/training_data/datasets/debugging_train.jsonl"
+  }
+}

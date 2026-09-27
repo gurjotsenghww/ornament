@@ -1,1 +1,29 @@
-{"category": "cards", "difficulty": "medium"}
+{
+  "id": "css_000008",
+  "language": "css",
+  "category": "modern_css",
+  "subcategory": "general",
+  "difficulty": "advanced",
+  "description": "Implement a modern, accessible CSS module for modern_css.",
+  "tags": [
+    "css",
+    "modern_css",
+    "production-quality"
+  ],
+  "framework": "html-css-tailwind",
+  "source_type": "generated",
+  "license": "MIT",
+  "source_url": "https://github.com/ornament/curated-web-data",
+  "collected_at": "2026-09-27T05:10:19.403891+00:00",
+  "validated": true,
+  "quality": {
+    "syntax": 1.0,
+    "structure": 0.6,
+    "complexity": 0.85,
+    "uniqueness": 0.9,
+    "documentation": 0.3,
+    "overall": 0.785,
+    "passed": true,
+    "validation_errors": []
+  }
+}

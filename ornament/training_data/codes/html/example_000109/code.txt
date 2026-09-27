@@ -1,1 +1,0 @@
-<main class='heroes'><section><h1>Hero 108</h1></section></main>

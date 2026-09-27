@@ -1,1 +1,29 @@
-{"category": "complete_pages", "difficulty": "medium"}
+{
+  "id": "html_000022",
+  "language": "html",
+  "category": "heroes",
+  "subcategory": "dark",
+  "difficulty": "medium",
+  "description": "Build a production-quality, accessible heroes component in dark_indigo style.",
+  "tags": [
+    "html",
+    "heroes",
+    "production-quality"
+  ],
+  "framework": "html-css-tailwind",
+  "source_type": "generated",
+  "license": "MIT",
+  "source_url": "https://github.com/ornament/curated-web-data",
+  "collected_at": "2026-09-27T05:10:11.616856+00:00",
+  "validated": true,
+  "quality": {
+    "syntax": 1.0,
+    "structure": 0.76,
+    "complexity": 0.85,
+    "uniqueness": 0.9,
+    "documentation": 0.75,
+    "overall": 0.87,
+    "passed": true,
+    "validation_errors": []
+  }
+}

@@ -1,1 +1,29 @@
-{"category": "cards", "difficulty": "medium"}
+{
+  "id": "html_000106",
+  "language": "html",
+  "category": "forms",
+  "subcategory": "editorial",
+  "difficulty": "advanced",
+  "description": "Build a production-quality, accessible forms component in amber_editorial style.",
+  "tags": [
+    "html",
+    "forms",
+    "production-quality"
+  ],
+  "framework": "html-css-tailwind",
+  "source_type": "generated",
+  "license": "MIT",
+  "source_url": "https://github.com/ornament/curated-web-data",
+  "collected_at": "2026-09-27T05:10:11.983708+00:00",
+  "validated": true,
+  "quality": {
+    "syntax": 1.0,
+    "structure": 0.52,
+    "complexity": 0.85,
+    "uniqueness": 0.9,
+    "documentation": 0.5,
+    "overall": 0.785,
+    "passed": true,
+    "validation_errors": []
+  }
+}

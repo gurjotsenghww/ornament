@@ -1,1 +1,0 @@
-.typography-9 { display: flex; }

@@ -1,1 +1,29 @@
-{"category": "typography", "difficulty": "medium"}
+{
+  "id": "css_000002",
+  "language": "css",
+  "category": "animations",
+  "subcategory": "general",
+  "difficulty": "advanced",
+  "description": "Implement a modern, accessible CSS module for animations.",
+  "tags": [
+    "css",
+    "animations",
+    "production-quality"
+  ],
+  "framework": "html-css-tailwind",
+  "source_type": "generated",
+  "license": "MIT",
+  "source_url": "https://github.com/ornament/curated-web-data",
+  "collected_at": "2026-09-27T05:10:19.379752+00:00",
+  "validated": true,
+  "quality": {
+    "syntax": 1.0,
+    "structure": 0.4,
+    "complexity": 0.85,
+    "uniqueness": 0.9,
+    "documentation": 0.3,
+    "overall": 0.735,
+    "passed": true,
+    "validation_errors": []
+  }
+}

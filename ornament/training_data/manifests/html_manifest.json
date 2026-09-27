@@ -1,0 +1,14 @@
+{
+  "dataset_version": "dataset-v0.1",
+  "language": "html",
+  "count": 113,
+  "categories": {
+    "heroes": 5,
+    "cards": 34,
+    "pricing": 1,
+    "forms": 33,
+    "portfolios": 20,
+    "complete_pages": 20
+  },
+  "generated_at": "2026-09-27T05:10:35.391111+00:00"
+}

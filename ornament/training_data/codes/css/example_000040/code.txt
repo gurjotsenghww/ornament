@@ -1,1 +1,0 @@
-.dark_mode-39 { display: flex; }

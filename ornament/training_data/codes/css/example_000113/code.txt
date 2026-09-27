@@ -1,1 +1,0 @@
-.responsive-112 { display: flex; }

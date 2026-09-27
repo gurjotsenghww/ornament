@@ -1,0 +1,13 @@
+{
+  "dataset_version": "dataset-v0.1",
+  "language": "css",
+  "count": 8,
+  "categories": {
+    "modern_css": 4,
+    "animations": 1,
+    "grid": 1,
+    "dark_mode": 1,
+    "buttons": 1
+  },
+  "generated_at": "2026-09-27T05:10:35.392180+00:00"
+}

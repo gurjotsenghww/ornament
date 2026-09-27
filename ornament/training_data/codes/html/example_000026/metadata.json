@@ -1,1 +1,29 @@
-{"category": "cards", "difficulty": "medium"}
+{
+  "id": "html_000026",
+  "language": "html",
+  "category": "complete_pages",
+  "subcategory": "creative",
+  "difficulty": "advanced",
+  "description": "Build a production-quality, accessible complete_pages component in clean_light style.",
+  "tags": [
+    "html",
+    "complete_pages",
+    "production-quality"
+  ],
+  "framework": "html-css-tailwind",
+  "source_type": "generated",
+  "license": "MIT",
+  "source_url": "https://github.com/ornament/curated-web-data",
+  "collected_at": "2026-09-27T05:10:11.637042+00:00",
+  "validated": true,
+  "quality": {
+    "syntax": 1.0,
+    "structure": 1.0,
+    "complexity": 0.95,
+    "uniqueness": 0.9,
+    "documentation": 0.75,
+    "overall": 0.95,
+    "passed": true,
+    "validation_errors": []
+  }
+}

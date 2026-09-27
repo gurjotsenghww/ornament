@@ -1,1 +1,0 @@
-.typography-156 { display: flex; }

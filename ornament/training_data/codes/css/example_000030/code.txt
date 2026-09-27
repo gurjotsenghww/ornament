@@ -1,1 +1,0 @@
-.cards-29 { display: flex; }

@@ -1,1 +1,0 @@
-.grid-32 { display: flex; }

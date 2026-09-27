@@ -1,0 +1,50 @@
+{
+  "dataset_version": "dataset-v0.1",
+  "generation_date": "2026-09-27T05:10:35.390110+00:00",
+  "sample_counts": {
+    "html": 113,
+    "css": 8,
+    "paired": 0,
+    "debugging": 50,
+    "total_validated": 171,
+    "rejected_count": 0,
+    "duplicate_skips": 179
+  },
+  "category_distribution": {
+    "html": {
+      "heroes": 5,
+      "cards": 34,
+      "pricing": 1,
+      "forms": 33,
+      "portfolios": 20,
+      "complete_pages": 20
+    },
+    "css": {
+      "modern_css": 4,
+      "animations": 1,
+      "grid": 1,
+      "dark_mode": 1,
+      "buttons": 1
+    },
+    "paired": {},
+    "debugging": {
+      "debugging": 50
+    }
+  },
+  "license_distribution": {
+    "MIT": "92%",
+    "Apache-2.0": "5%",
+    "Creative Commons": "3%"
+  },
+  "source_distribution": {
+    "generated": "65%",
+    "open_source": "30%",
+    "educational": "5%"
+  },
+  "validation_statistics": {
+    "status": "VALIDATED",
+    "html_pass_rate": "100%",
+    "css_pass_rate": "100%",
+    "min_quality_threshold": 0.5
+  }
+}
