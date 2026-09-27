@@ -269,7 +269,7 @@ class AutonomousSiteBuilder:
                     js_code = script_match.group(1).strip()
 
             clean_text = re.sub(r"```[\s\S]*?```", "", raw).strip()
-            explanation = clean_text if clean_text else "Custom code synthesized by Qwen 2.5 Coder to match your exact specification."
+            explanation = clean_text if clean_text else "Custom code synthesized by Orn\u00e0 2.5 Coder to match your exact specification."
 
             if html_code:
                 # Ensure HTML links to styles.css and script.js

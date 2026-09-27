@@ -550,6 +550,56 @@
         border-radius: 18px 18px 18px 4px;
     }
 
+    .chat-bubble code,
+    .chat-bubble .highlight-code,
+    code,
+    .highlight-code {
+        font-family: 'JetBrains Mono', monospace !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+        background: #f1f3f6;
+        padding: 2px 7px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        display: inline-block;
+        margin: 0 1px;
+    }
+
+    .chat-message.user .chat-bubble code,
+    .chat-message.user .chat-bubble .highlight-code {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff !important;
+        border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .chat-bubble strong {
+        font-weight: 700 !important;
+        color: #0f172a;
+    }
+    .chat-message.user .chat-bubble strong {
+        color: #fff !important;
+    }
+
+    .chat-bubble pre.chat-code-block {
+        margin: 10px 0;
+        padding: 12px 14px;
+        background: #18181b;
+        color: #f4f4f5;
+        border-radius: 10px;
+        overflow-x: auto;
+        font-size: 12.5px;
+    }
+    .chat-bubble pre.chat-code-block code {
+        background: transparent !important;
+        border: none !important;
+        color: #f4f4f5 !important;
+        padding: 0 !important;
+        font-weight: 500 !important;
+        box-shadow: none !important;
+        display: block !important;
+    }
+
     /* Attachments that traveled from the composer into a sent message */
     .chat-message-attachments.attachments { margin-bottom: 0; }
     .chat-message-attachments .attachment-remove { display: none; }
@@ -1382,7 +1432,7 @@
                     <div class="toolbar-right" style="position:relative;">
                         <button class="dropdown-btn" id="modelSelectorBtn" type="button" title="Select AI Synthesis Model">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                            <span id="selectedModelLabel">Qwen 2.5 Coder</span>
+                            <span id="selectedModelLabel">Ornà 2.5 Coder (Neural 3B)</span>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                         </button>
                         <div id="modelMenuPopover" style="display:none; position:absolute; bottom:calc(100% + 10px); right:48px; background:rgba(24, 24, 28, 0.96); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255, 255, 255, 0.12); border-radius:14px; padding:6px; box-shadow:0 16px 36px rgba(0,0,0,0.5); z-index:1000; min-width:240px;">
@@ -2283,7 +2333,9 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         if (!text) return '';
         let s = escapeHtml(text);
         s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+        s = s.replace(/`([^`]+)`/g, '<strong class="highlight-code">$1</strong>');
+        s = s.replace(/(?:^|\s)&quot;([^&"\n]{1,60})&quot;/g, ' <strong class="highlight-code">&ldquo;$1&rdquo;</strong>');
+        s = s.replace(/(?:^|\s)&#39;([^&#39;\n]{1,60})&#39;/g, ' <strong class="highlight-code">&lsquo;$1&rsquo;</strong>');
         return s;
     }
 
@@ -2291,7 +2343,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         const bubble = document.createElement('div');
         bubble.className = 'chat-bubble code-explanation-bubble';
 
-        let modelName = 'Qwen 2.5 Coder';
+        let modelName = 'Orn\u00e0 2.5 Coder (Neural 3B)';
         let summaryParagraphs = [];
         let fileNotes = {};
 
@@ -2416,7 +2468,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                     o.style.color = o === opt ? '#fff' : '#8e8e9f';
                 });
                 if (selectedModelLabel) {
-                    selectedModelLabel.textContent = currentSelectedModel === 'qwen' ? 'Qwen 2.5 Coder' : 'Instant Synthesizer';
+                    selectedModelLabel.textContent = currentSelectedModel === 'qwen' ? 'Orn\u00e0 2.5 Coder (Neural 3B)' : 'Instant Synthesizer';
                 }
                 modelMenuPopover.style.display = 'none';
             });
@@ -2424,10 +2476,10 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
     }
 
     const QWEN_ENGINEERING_FLOW = {
-        headerLabel: 'Qwen 2.5 Coder synthesizing project...',
-        doneLabel: 'Website ready (Synthesized by Qwen)',
+        headerLabel: 'Orn\u00e0 2.5 Coder synthesizing project...',
+        doneLabel: 'Website ready (Synthesized by Orn\u00e0 2.5 Coder)',
         items: [
-            'Querying local Qwen2.5-Coder-3B neural model',
+            'Querying local Orn\u00e0 2.5 Coder neural model',
             'Synthesizing bespoke brand & layout architecture',
             'Applying 60-30-10 color harmonization system',
             'Writing production code bundle (HTML, CSS, JS)...',
@@ -2584,6 +2636,28 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
 
     let chatConversationHistory = [];
 
+    function formatAssistantChatReply(text) {
+        if (!text) return '';
+        let s = escapeHtml(text);
+        // Parse fenced code blocks
+        s = s.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (m, lang, code) => {
+            return `<pre class="chat-code-block"><code>${code.trim()}</code></pre>`;
+        });
+        // Parse **bold**
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        // Parse `backticks / quoted marks` into bold highlights
+        s = s.replace(/`([^`]+)`/g, '<strong class="highlight-code">$1</strong>');
+        // Parse &quot;double quotes&quot;
+        s = s.replace(/(?:^|\s)&quot;([^&"\n]{1,60})&quot;/g, ' <strong class="highlight-code">&ldquo;$1&rdquo;</strong>');
+        // Parse &#39;single quotes&#39;
+        s = s.replace(/(?:^|\s)&#39;([^&#39;\n]{1,60})&#39;/g, ' <strong class="highlight-code">&lsquo;$1&rsquo;</strong>');
+        // Bullet points
+        s = s.replace(/^[-*]\s+/gm, '• ');
+        // Linebreaks
+        s = s.replace(/\n/g, '<br>');
+        return s;
+    }
+
     async function showQwenChatReply(userPrompt) {
         const reply = document.createElement('div');
         reply.className = 'chat-message assistant';
@@ -2613,9 +2687,8 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
 
             const bubble = document.createElement('div');
             bubble.className = 'chat-bubble';
-            bubble.style.whiteSpace = 'pre-wrap';
             bubble.style.lineHeight = '1.65';
-            bubble.textContent = replyText;
+            bubble.innerHTML = formatAssistantChatReply(replyText);
             reply.appendChild(bubble);
             scrollChatToBottom();
             saveCurrentChat();
