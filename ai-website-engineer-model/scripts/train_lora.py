@@ -333,16 +333,20 @@ def train(
     if config.checkpoint_path:
         cp = config.checkpoint_path.strip()
         if cp.lower() in ["latest", "true", "1"]:
-            ckpts = list(out_path.glob("checkpoint-*"))
+            # Only consider complete checkpoints with trainer_state.json
+            ckpts = [c for c in out_path.glob("checkpoint-*") if (c / "trainer_state.json").exists()]
             if ckpts:
                 ckpts.sort(key=lambda x: int(x.name.split("-")[1]))
                 resume_from = str(ckpts[-1])
-                print(f"[*] Found latest checkpoint to resume: {resume_from}")
+                print(f"[*] Found valid latest checkpoint to resume: {resume_from}")
             else:
-                print(f"[*] No checkpoint found in {out_path}. Starting fresh training.")
+                print(f"[*] No fully serialized checkpoint found in {out_path}. Starting fresh training.")
         else:
-            resume_from = cp
-            print(f"[*] Resuming explicitly from: {resume_from}")
+            if (Path(cp) / "trainer_state.json").exists():
+                resume_from = cp
+                print(f"[*] Resuming explicitly from: {resume_from}")
+            else:
+                print(f"[!] Checkpoint {cp} is incomplete (missing trainer_state.json). Starting fresh.")
 
     # 7. Execute Training Loop with CUDA OOM Safeguard
     print("\n" + "=" * 65)
@@ -352,6 +356,12 @@ def train(
 
     try:
         trainer.train(resume_from_checkpoint=resume_from)
+    except FileNotFoundError as fnf:
+        if resume_from:
+            print(f"[!] Checkpoint resume failed ({fnf}). Retrying with fresh training loop...")
+            trainer.train()
+        else:
+            raise fnf
     except torch.cuda.OutOfMemoryError as oom:
         print("\n" + "!" * 65)
         print("          CUDA OUT OF MEMORY (OOM) ERROR CAUGHT")
