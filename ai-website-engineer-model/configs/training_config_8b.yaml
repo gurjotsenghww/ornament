@@ -1,0 +1,44 @@
+# Ornàment Cloud Training Configuration — Qwen 7B/8B Coder
+# Tailored for Google Colab Tesla T4 (~14.56 GB usable VRAM) & NVIDIA A100
+
+model:
+  model_name: "Qwen/Qwen2.5-Coder-7B-Instruct"  # Default 7B/8B class, or override with Qwen/Qwen3-Coder-8B
+  precision: "4bit"                             # 4-bit NF4 double quant (~5.2 GB base weights)
+  device: "auto"
+  context_length: 1536                          # Extended context fitting within T4 14.56GB VRAM
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+training:
+  batch_size: 1                                 # Optimal for 8B on Tesla T4 (use 2 on A100)
+  gradient_accumulation_steps: 16               # Effective batch size = 16
+  learning_rate: 0.0002
+  num_epochs: 2
+  max_steps: -1                                 # Full training
+  warmup_steps: 10
+  max_grad_norm: 0.3
+  optim: "paged_adamw_8bit"
+  logging_steps: 10
+  save_strategy: "steps"
+  save_steps: 20
+  eval_strategy: "no"
+  gradient_checkpointing: true
+
+paths:
+  dataset_path: "ai-website-engineer-model/datasets/ornament_master_train.jsonl"
+  val_dataset_path: "ai-website-engineer-model/datasets/ornament_master_val.jsonl"
+  checkpoint_path: ""
+  output_path: "ai-website-engineer-model/adapters/v0.1.0-8b"
