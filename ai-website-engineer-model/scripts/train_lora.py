@@ -16,6 +16,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import List, Dict, Any, Optional
 
 def train(
     config_path: Path,
@@ -177,8 +178,8 @@ def train(
     train_ds = Dataset.from_list(raw_train)
     val_ds = Dataset.from_list(raw_val)
 
-    train_tokenized = train_ds.map(preprocess_function, batched=True, remove_columns=["messages"])
-    val_tokenized = val_ds.map(preprocess_function, batched=True, remove_columns=["messages"])
+    train_tokenized = train_ds.map(preprocess_function, batched=True, remove_columns=train_ds.column_names)
+    val_tokenized = val_ds.map(preprocess_function, batched=True, remove_columns=val_ds.column_names)
 
     # 4. Training Arguments
     training_args = TrainingArguments(
