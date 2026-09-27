@@ -1432,7 +1432,7 @@
                     <div class="toolbar-right" style="position:relative;">
                         <button class="dropdown-btn" id="modelSelectorBtn" type="button" title="Select AI Synthesis Model">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                            <span id="selectedModelLabel">Ornà 2.5 Coder (Neural 3B)</span>
+                            <span id="selectedModelLabel">Ornà 2.5 Coder</span>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                         </button>
                         <div id="modelMenuPopover" style="display:none; position:absolute; bottom:calc(100% + 10px); right:48px; background:rgba(24, 24, 28, 0.96); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255, 255, 255, 0.12); border-radius:14px; padding:6px; box-shadow:0 16px 36px rgba(0,0,0,0.5); z-index:1000; min-width:240px;">
@@ -2468,7 +2468,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                     o.style.color = o === opt ? '#fff' : '#8e8e9f';
                 });
                 if (selectedModelLabel) {
-                    selectedModelLabel.textContent = currentSelectedModel === 'qwen' ? 'Orn\u00e0 2.5 Coder (Neural 3B)' : 'Instant Synthesizer';
+                    selectedModelLabel.textContent = currentSelectedModel === 'qwen' ? 'Orn\u00e0 2.5 Coder' : 'Instant Synthesizer';
                 }
                 modelMenuPopover.style.display = 'none';
             });
