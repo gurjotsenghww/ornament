@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ornàment Dashboard</title>
+<title>Ornàment</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -107,25 +109,46 @@
 
     .nav-history-empty { padding: 6px 12px; font-size: 12.5px; color: var(--text-light); }
 
-    .history-item {
+
+    .history-item-wrap {
+        display: flex; align-items: center;
+        width: 100%; border-radius: 10px;
+        transition: background 0.15s;
+        position: relative;
+    }
+    .history-item-wrap:hover { background: var(--hover-bg); }
+    .history-item-wrap.active {
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.04);
+    }
+    .history-item-btn {
         display: flex; align-items: center; gap: 10px;
-        width: 100%;
+        flex: 1; min-width: 0;
         padding: 9px 12px; border-radius: 10px;
         background: transparent; border: none; cursor: pointer;
         color: var(--text-muted); font-size: 13px; font-family: inherit;
         text-align: left; white-space: nowrap;
-        transition: background 0.15s, color 0.15s;
+        transition: color 0.15s;
     }
-    .history-item:hover { background: var(--hover-bg); color: var(--text-main); }
-    .history-item.active {
-        background: #fff; color: var(--text-main);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.04);
-        font-weight: 600;
+    .history-item-wrap:hover .history-item-btn,
+    .history-item-wrap.active .history-item-btn { color: var(--text-main); }
+    .history-item-wrap.active .history-item-btn { font-weight: 600; }
+    .history-item-btn svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.5; fill: none; flex-shrink: 0; }
+    .history-item-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .history-item-actions {
+        display: none; align-items: center; gap: 2px;
+        padding-right: 6px; flex-shrink: 0;
     }
-    .history-item svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.5; fill: none; flex-shrink: 0; }
-    .history-item span {
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    .history-item-wrap:hover .history-item-actions { display: flex; }
+    .history-action-btn {
+        background: transparent; border: none; cursor: pointer;
+        color: var(--text-muted); padding: 4px; border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.12s, color 0.12s;
     }
+    .history-action-btn:hover { background: rgba(0,0,0,0.07); color: var(--text-main); }
+    .history-action-btn.delete-btn:hover { color: #ef4444; }
+    .history-action-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
     .nav-item {
         display: flex; align-items: center; gap: 12px;
         padding: 10px 12px; border-radius: 10px;
@@ -1131,11 +1154,11 @@
                         </button>
                         <div class="model-menu-popover" id="modelMenuPopover" style="display: none; position: absolute; bottom: calc(100% + 10px); right: 48px; background: rgba(24, 24, 28, 0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 6px; box-shadow: 0 16px 36px rgba(0,0,0,0.5); z-index: 1000; min-width: 230px;">
                             <div class="model-opt active" data-model="qwen" style="display:flex; align-items:center; justify-content:space-between; padding: 8px 12px; border-radius: 8px; cursor:pointer; color: #fff; font-size: 13px; font-weight: 500; transition: background 0.15s; background: rgba(255,255,255,0.08);">
-                                <span>🧠 Qwen 2.5 Coder (Neural 3B)</span>
+                                <span>Qwen 2.5 Coder (Neural 3B)</span>
                                 <span class="check-mark" style="color: #6366f1; font-weight: bold; margin-left: 8px;">✓</span>
                             </div>
                             <div class="model-opt" data-model="instant" style="display:flex; align-items:center; justify-content:space-between; padding: 8px 12px; border-radius: 8px; cursor:pointer; color: #8e8e9f; font-size: 13px; font-weight: 500; transition: background 0.15s;">
-                                <span>⚡ Instant Synthesizer</span>
+                                <span>Instant Synthesizer</span>
                                 <span class="check-mark" style="display:none; color: #6366f1; font-weight: bold; margin-left: 8px;">✓</span>
                             </div>
                         </div>
@@ -1365,6 +1388,28 @@
         if (isMobile()) body.classList.remove('drawer-open');
     }
 
+    function deleteChat(id) {
+        chatSessions = chatSessions.filter(c => c.id !== id);
+        try { localStorage.setItem('ornament_chat_sessions', JSON.stringify(chatSessions)); } catch(e) {}
+        if (currentChatId === id) {
+            currentChatId = null;
+            chatMessagesEl.innerHTML = '';
+            document.body.classList.remove('chat-mode');
+        }
+        renderChatHistory();
+    }
+
+    function renameChat(id) {
+        const chat = chatSessions.find(c => c.id === id);
+        if (!chat) return;
+        const newTitle = prompt('Rename chat:', chat.title);
+        if (newTitle && newTitle.trim()) {
+            chat.title = newTitle.trim().slice(0, 60);
+            try { localStorage.setItem('ornament_chat_sessions', JSON.stringify(chatSessions)); } catch(e) {}
+            renderChatHistory();
+        }
+    }
+
     function renderChatHistory() {
         if (!chatHistoryListEl) return;
         if (chatSessions.length === 0) {
@@ -1372,13 +1417,26 @@
             return;
         }
         chatHistoryListEl.innerHTML = chatSessions.map(c => `
-            <button type="button" class="history-item${c.id === currentChatId ? ' active' : ''}" data-chat-id="${c.id}" title="${escapeHtml(c.title)}">
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span>${escapeHtml(c.title)}</span>
-            </button>
+            <div class="history-item-wrap${c.id === currentChatId ? ' active' : ''}" data-chat-id="${c.id}">
+                <button type="button" class="history-item-btn" title="${escapeHtml(c.title)}">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span>${escapeHtml(c.title)}</span>
+                </button>
+                <div class="history-item-actions">
+                    <button type="button" class="history-action-btn rename-btn" title="Rename">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button type="button" class="history-action-btn delete-btn" title="Delete">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    </button>
+                </div>
+            </div>
         `).join('');
-        chatHistoryListEl.querySelectorAll('.history-item').forEach(btn => {
-            btn.addEventListener('click', () => openChat(btn.dataset.chatId));
+        chatHistoryListEl.querySelectorAll('.history-item-wrap').forEach(wrap => {
+            const id = wrap.dataset.chatId;
+            wrap.querySelector('.history-item-btn').addEventListener('click', () => openChat(id));
+            wrap.querySelector('.rename-btn').addEventListener('click', (e) => { e.stopPropagation(); renameChat(id); });
+            wrap.querySelector('.delete-btn').addEventListener('click', (e) => { e.stopPropagation(); deleteChat(id); });
         });
     }
 
@@ -2281,6 +2339,78 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         }
     }
 
+    // ─── Prompt intent classifier ─────────────────────────────────────────────
+    function isCodingTask(prompt) {
+        if (!prompt) return false;
+        const p = prompt.toLowerCase();
+        const siteWords = [
+            'build', 'create', 'make', 'generate', 'design', 'develop', 'code',
+            'website', 'webpage', 'web page', 'landing page', 'landing-page',
+            'portfolio', 'blog', 'app', 'application', 'site', 'homepage',
+            'html', 'css', 'javascript', 'js', 'react', 'vue', 'svelte',
+            'ui', 'frontend', 'backend', 'component', 'button', 'form',
+            'navbar', 'footer', 'hero section', 'e-commerce', 'ecommerce',
+            'dashboard', 'admin panel', 'saas', 'payment page', 'checkout'
+        ];
+        return siteWords.some(w => p.includes(w));
+    }
+
+    // ─── Conversational Qwen reply ─────────────────────────────────────────────
+    const chatConversationHistory = [];  // [{role, content}] persisted per chat session
+
+    async function showQwenChatReply(userPrompt) {
+        // Add typing indicator
+        const typingEl = document.createElement('div');
+        typingEl.className = 'chat-message assistant';
+        typingEl.innerHTML = '<div class="chat-bubble typing-dots"><span></span><span></span><span></span></div>';
+        chatMessagesEl.appendChild(typingEl);
+        scrollChatToBottom();
+
+        // Record user turn in history
+        chatConversationHistory.push({ role: 'user', content: userPrompt });
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: userPrompt,
+                    history: chatConversationHistory.slice(0, -1)  // history before this turn
+                })
+            });
+
+            typingEl.remove();
+            const data = await res.json();
+            const replyText = data.reply || 'Sorry, I could not get a response.';
+
+            // Record assistant turn in history
+            chatConversationHistory.push({ role: 'assistant', content: replyText });
+
+            const replyEl = document.createElement('div');
+            replyEl.className = 'chat-message assistant';
+
+            // Render markdown-like: code blocks, bold, paragraphs
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.style.cssText = 'white-space: pre-wrap; line-height: 1.65; max-width: 700px;';
+            bubble.textContent = replyText;
+            replyEl.appendChild(bubble);
+            chatMessagesEl.appendChild(replyEl);
+            scrollChatToBottom();
+            saveCurrentChat();
+        } catch (err) {
+            typingEl.remove();
+            const errEl = document.createElement('div');
+            errEl.className = 'chat-message assistant';
+            const errBubble = document.createElement('div');
+            errBubble.className = 'chat-bubble';
+            errBubble.textContent = 'Unable to reach the model right now. Make sure the server is running.';
+            errEl.appendChild(errBubble);
+            chatMessagesEl.appendChild(errEl);
+            scrollChatToBottom();
+        }
+    }
+
     function sendMessage() {
         const text = promptInput.value.trim();
         const hasAttachments = attachmentsEl.children.length > 0;
@@ -2329,8 +2459,16 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         refreshAttachmentsVisibility();
         promptInput.focus();
 
-        const activeFlow = currentSelectedModel === 'qwen' ? QWEN_ENGINEERING_FLOW : INSTANT_ENGINEERING_FLOW;
-        showAssistantActivityFlow(activeFlow, text, attachmentsData);
+        // ─── Route to website generation OR conversational reply ──────────────
+        const hasCodeAttachment = attachmentsData.some(a => ['html','css','js','ts','json','txt','md'].includes(a.ext));
+        if (isCodingTask(text) || hasCodeAttachment || hasAttachments) {
+            // Website / code generation path — show activity panel + code explorer
+            const activeFlow = currentSelectedModel === 'qwen' ? QWEN_ENGINEERING_FLOW : INSTANT_ENGINEERING_FLOW;
+            showAssistantActivityFlow(activeFlow, text, attachmentsData);
+        } else {
+            // Conversational path — just answer with Qwen
+            showQwenChatReply(text);
+        }
     }
 
     submitBtn.addEventListener('click', sendMessage);

@@ -64,7 +64,17 @@ def startup_event():
 
 @app.get("/favicon.ico")
 def favicon():
+    fav = settings.base_dir / "frontend" / "studio" / "favicon.png"
+    if fav.exists():
+        return FileResponse(str(fav), media_type="image/png")
     return Response(status_code=204)
+
+@app.get("/favicon.png")
+def favicon_png():
+    fav = settings.base_dir / "frontend" / "studio" / "favicon.png"
+    if fav.exists():
+        return FileResponse(str(fav), media_type="image/png")
+    return Response(status_code=404)
 
 @app.get("/bg.jpg")
 def studio_bg():
@@ -409,6 +419,10 @@ def get_model_status():
 class ChatPayload(BaseModel):
     message: str
 
+class ConversationalChatPayload(BaseModel):
+    message: str
+    history: Optional[List[Dict[str, str]]] = None  # [{"role": "user"|"assistant", "content": "..."}]
+
 _llm_instance = None
 
 def get_local_llm():
@@ -419,17 +433,48 @@ def get_local_llm():
             weights = settings.base_dir / "ai-website-engineer-model" / "weights" / "qwen2.5-coder-3b-instruct-q4_k_m.gguf"
             if not weights.exists():
                 return None
-            _llm_instance = Llama(model_path=str(weights), n_ctx=2048, n_threads=4, verbose=False)
+            _llm_instance = Llama(model_path=str(weights), n_ctx=4096, n_threads=4, verbose=False)
         except Exception as e:
             return None
     return _llm_instance
+
+@app.post("/api/chat")
+def chat_conversational(payload: ConversationalChatPayload):
+    """
+    General-purpose conversational chat with local Qwen 2.5 Coder.
+    Supports multi-turn history. Returns a plain text reply.
+    """
+    llm = get_local_llm()
+    if not llm:
+        return {"reply": "I'm sorry, the local model is not available right now. Make sure the Qwen GGUF weights are present in ai-website-engineer-model/weights/."}
+
+    system_prompt = (
+        "You are Ornàment, a helpful and knowledgeable AI assistant built into the Ornàment creative studio. "
+        "You can help with anything: coding, design, writing, answering questions, explaining concepts, or having a conversation. "
+        "For website-building tasks, you can generate full HTML/CSS/JS code. "
+        "Be friendly, clear, and concise. Respond naturally to what the user says."
+    )
+
+    messages = [{"role": "system", "content": system_prompt}]
+    if payload.history:
+        for turn in payload.history[-10:]:  # last 10 turns for context
+            messages.append({"role": turn.get("role", "user"), "content": turn.get("content", "")})
+    messages.append({"role": "user", "content": payload.message})
+
+    try:
+        res = llm.create_chat_completion(messages=messages, max_tokens=600, temperature=0.7)
+        reply = res["choices"][0]["message"]["content"]
+    except Exception as e:
+        reply = f"Sorry, I encountered an error: {str(e)}"
+
+    return {"reply": reply}
 
 @app.post("/api/model/chat")
 def chat_with_model(payload: ChatPayload):
     llm = get_local_llm()
     if not llm:
         raise HTTPException(status_code=404, detail="Model weights not loaded or llama-cpp-python unavailable.")
-    
+
     system_prompt = (
         "You are Qwen2.5-Coder-3B, the autonomous AI website engineer in the Ornàment system. "
         "You write production-quality, accessible, semantic HTML5, modern CSS, and TypeScript code. "
