@@ -1,0 +1,1 @@
+.typography-6 { display: flex; }

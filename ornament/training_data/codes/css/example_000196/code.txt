@@ -1,0 +1,1 @@
+.typography-195 { display: flex; }

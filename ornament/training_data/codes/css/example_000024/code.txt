@@ -1,0 +1,1 @@
+.responsive-23 { display: flex; }

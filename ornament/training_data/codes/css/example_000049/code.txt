@@ -1,0 +1,1 @@
+.typography-48 { display: flex; }

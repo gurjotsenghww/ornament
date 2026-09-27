@@ -1,0 +1,1 @@
+.flexbox-50 { display: flex; }

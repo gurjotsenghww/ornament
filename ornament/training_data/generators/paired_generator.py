@@ -1,0 +1,1 @@
+"""Paired HTML+CSS generator."""

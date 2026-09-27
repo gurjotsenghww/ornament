@@ -1,0 +1,1 @@
+.grid-40 { display: flex; }

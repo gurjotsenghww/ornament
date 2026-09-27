@@ -1,0 +1,1 @@
+.typography-118 { display: flex; }

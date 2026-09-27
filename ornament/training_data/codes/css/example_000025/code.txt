@@ -1,0 +1,1 @@
+.flexbox-24 { display: flex; }
