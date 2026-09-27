@@ -37,6 +37,35 @@ def get_project_dir(project_name: str) -> Path:
     p.mkdir(parents=True, exist_ok=True)
     return p
 
+def ensure_preview_server(project_name: str = "demo-portfolio") -> str:
+    p_dir = get_project_dir(project_name)
+    preview_file = p_dir / "public" / "preview.html"
+    if not preview_file.exists():
+        from ornament.generator.custom_site_generator import CustomSiteGenerator
+        CustomSiteGenerator.generate(
+            workspace_path=p_dir,
+            prompt="Autonomous AI Website Engineer portfolio with ultra-modern dark theme",
+            site_type="portfolio",
+            style="minimal_luxury",
+            palette_key="indigo"
+        )
+    if project_name not in active_preview_servers:
+        server = DevPreviewServer(p_dir, port=3456)
+        server.start()
+        active_preview_servers[project_name] = server
+    return active_preview_servers[project_name].url
+
+@app.on_event("startup")
+def startup_event():
+    try:
+        ensure_preview_server("demo-portfolio")
+    except Exception as e:
+        pass
+
+@app.get("/favicon.ico")
+def favicon():
+    return Response(status_code=204)
+
 @app.get("/api/health")
 def get_health():
     telemetry = HardwareManager.get_system_telemetry()
@@ -358,6 +387,7 @@ def build_datasets_endpoint(version: str = "dataset-v0.2"):
 
 @app.get("/", response_class=HTMLResponse)
 def index_page():
+    ensure_preview_server("demo-portfolio")
     return """<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -705,7 +735,7 @@ def index_page():
 
       const userDiv = document.createElement('div');
       userDiv.className = 'p-3 rounded-lg bg-indigo-950/40 border border-indigo-900/60 text-indigo-200';
-      userDiv.innerHTML = `<strong class="text-white">You:</strong> \${text}`;
+      userDiv.innerHTML = `<strong class="text-white">You:</strong> ${text}`;
       history.appendChild(userDiv);
       input.value = '';
       history.scrollTop = history.scrollHeight;
@@ -724,9 +754,9 @@ def index_page():
           body: JSON.stringify({ message: text })
         });
         const data = await res.json();
-        botDiv.innerHTML = `<strong class="text-indigo-400">Qwen2.5-Coder-3B:</strong> <div class="mt-1.5 whitespace-pre-wrap font-sans leading-relaxed">\${data.reply || data.detail}</div>`;
+        botDiv.innerHTML = `<strong class="text-indigo-400">Qwen2.5-Coder-3B:</strong> <div class="mt-1.5 whitespace-pre-wrap font-sans leading-relaxed">${data.reply || data.detail}</div>`;
       } catch (err) {
-        botDiv.innerHTML = `<strong class="text-rose-400">Error:</strong> \${err.message}`;
+        botDiv.innerHTML = `<strong class="text-rose-400">Error:</strong> ${err.message}`;
       } finally {
         btn.disabled = false;
         history.scrollTop = history.scrollHeight;
@@ -879,7 +909,7 @@ def index_page():
         const data = await res.json();
         refreshPreview();
         loadDiff();
-        alert('Intentional Route Bug Simulated: ' + data.message + '\n\nNow click "Run Playwright Tests" to catch it, or "Auto Repair Loop" to have the agent fleet diagnose and fix it!');
+        alert('Intentional Route Bug Simulated: ' + data.message + '\\n\\nNow click "Run Playwright Tests" to catch it, or "Auto Repair Loop" to have the agent fleet diagnose and fix it!');
       } catch (e) {
         alert('Simulate bug error: ' + e);
       }
@@ -958,13 +988,13 @@ def index_page():
       const btnModel = document.getElementById('tab-btn-model');
 
       if (view === 'studio') {
-        studio.classList.remove('hidden');
-        model.classList.add('hidden');
+        studio.style.display = 'grid';
+        model.style.display = 'none';
         btnStudio.className = 'px-3 py-1 rounded bg-indigo-600 font-bold text-white shadow transition';
         btnModel.className = 'px-3 py-1 rounded text-zinc-400 hover:text-white font-medium transition';
       } else {
-        studio.classList.add('hidden');
-        model.classList.remove('hidden');
+        studio.style.display = 'none';
+        model.style.display = 'block';
         btnStudio.className = 'px-3 py-1 rounded text-zinc-400 hover:text-white font-medium transition';
         btnModel.className = 'px-3 py-1 rounded bg-indigo-600 font-bold text-white shadow transition';
         loadModelView();
