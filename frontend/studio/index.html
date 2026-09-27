@@ -1,0 +1,2604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ornàment Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    :root {
+        --sidebar-width: 260px;
+        --sidebar-collapsed: 78px;
+        --text-main: #111;
+        --text-muted: #7a7a7a;
+        --text-light: #a3a3a3;
+        --border-color: #e5e5e5;
+        --hover-bg: #f0f0f0;
+        --sidebar-bg: #f9f9fa;
+        --transition: 0.25s ease;
+    }
+
+    html, body { height: 100%; height: 100dvh; overflow: hidden; }
+
+    body {
+        display: flex;
+        background: #f5f6f8;
+        color: var(--text-main);
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar {
+        width: var(--sidebar-width);
+        background: var(--sidebar-bg);
+        border-right: 1px solid var(--border-color);
+        display: flex; flex-direction: column;
+        padding: 20px 16px;
+        flex-shrink: 0;
+        height: 100vh;
+        height: 100dvh;
+        overflow-y: auto; overflow-x: hidden;
+        transition: width var(--transition), transform var(--transition);
+        z-index: 100;
+        position: relative;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+    body.collapsed .sidebar { width: var(--sidebar-collapsed); }
+    body.collapsed .logo-text,
+    body.collapsed .nav-item span,
+    body.collapsed .user-info,
+    body.collapsed .chevron { display: none; }
+    body.collapsed .logo-area { justify-content: center; padding: 0; }
+    body.collapsed .nav-item { justify-content: center; padding: 12px; }
+    body.collapsed .user-profile { justify-content: center; }
+
+    .logo-area {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 30px; padding: 0 8px; min-height: 40px;
+    }
+    .logo {
+        font-size: 24px; font-weight: 500; letter-spacing: -0.5px;
+        display: flex; align-items: center; white-space: nowrap; flex-grow: 1;
+    }
+
+    .toggle-btn {
+        background: transparent; border: none; cursor: pointer;
+        color: var(--text-muted);
+        width: 32px; height: 32px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        transition: background 0.15s, color 0.15s;
+    }
+    .toggle-btn:hover { background: var(--hover-bg); color: var(--text-main); }
+
+    .nav-menu { display: flex; flex-direction: column; gap: 4px; flex-grow: 0; flex-shrink: 0; }
+
+    .nav-history {
+        display: flex; flex-direction: column;
+        flex: 1; min-height: 48px;
+        margin-top: 8px;
+        overflow: hidden;
+    }
+    body.collapsed .nav-history { display: none; }
+    .nav-history-label {
+        font-size: 11px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase;
+        color: var(--text-light);
+        padding: 12px 12px 6px;
+        flex-shrink: 0;
+    }
+    .nav-history-list {
+        flex: 1; min-height: 0; overflow-y: auto;
+        display: flex; flex-direction: column; gap: 2px;
+        padding-right: 2px;
+    }
+    .nav-history-list::-webkit-scrollbar { width: 4px; }
+    .nav-history-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+    .nav-history-empty { padding: 6px 12px; font-size: 12.5px; color: var(--text-light); }
+
+    .history-item {
+        display: flex; align-items: center; gap: 10px;
+        width: 100%;
+        padding: 9px 12px; border-radius: 10px;
+        background: transparent; border: none; cursor: pointer;
+        color: var(--text-muted); font-size: 13px; font-family: inherit;
+        text-align: left; white-space: nowrap;
+        transition: background 0.15s, color 0.15s;
+    }
+    .history-item:hover { background: var(--hover-bg); color: var(--text-main); }
+    .history-item.active {
+        background: #fff; color: var(--text-main);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.04);
+        font-weight: 600;
+    }
+    .history-item svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.5; fill: none; flex-shrink: 0; }
+    .history-item span {
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    }
+    .nav-item {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 12px; border-radius: 10px;
+        text-decoration: none; color: var(--text-muted);
+        font-size: 14px; font-weight: 500;
+        transition: background 0.2s, color 0.2s;
+        white-space: nowrap;
+    }
+    .nav-item:hover { background: var(--hover-bg); color: var(--text-main); }
+    .nav-item.active {
+        background: #fff; color: var(--text-main);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.04);
+        font-weight: 600;
+    }
+    .nav-item svg {
+        width: 20px; height: 20px; stroke: currentColor;
+        stroke-width: 1.5; fill: none; flex-shrink: 0;
+    }
+
+    .sidebar-bottom { display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 16px; }
+    .divider { height: 1px; background: var(--border-color); margin: 8px 0; }
+
+    .user-profile { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 10px; cursor: pointer; }
+    .user-profile:hover { background: var(--hover-bg); }
+    .avatar {
+        width: 36px; height: 36px; border-radius: 50%;
+        background: #222 url('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80') center/cover;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(0,0,0,0.06);
+    }
+    .user-info { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
+    .user-name { font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .user-plan { font-size: 12px; color: var(--text-light); }
+    .chevron { width: 16px; height: 16px; color: var(--text-light); flex-shrink: 0; }
+
+    /* ================= MAIN ================= */
+    .main {
+        flex: 1; height: 100vh;
+        height: 100dvh;
+        overflow-y: auto; overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+        background: #e8ecf1 url('bg.jpg') center/cover no-repeat fixed;
+    }
+    .main::-webkit-scrollbar { width: 8px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 8px; }
+    .main::before {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(to right, rgba(255,255,255,0.55), rgba(255,255,255,0.2));
+        pointer-events: none; z-index: 0;
+    }
+
+    /* ================= TOP HEADER ================= */
+    .top-header {
+        position: relative; z-index: 2;
+        display: flex; justify-content: flex-end; align-items: center;
+        padding: 16px 40px; gap: 12px;
+    }
+
+    .hamburger {
+        display: none; width: 40px; height: 40px; border-radius: 50%;
+        background: rgba(255,255,255,0.75);
+        border: 1px solid rgba(255,255,255,0.5);
+        cursor: pointer; color: var(--text-main);
+        align-items: center; justify-content: center; margin-right: auto;
+    }
+
+    .header-toggle {
+        display: flex;
+        width: 40px; height: 40px; border-radius: 50%;
+        background: rgba(255,255,255,0.75);
+        border: 1px solid rgba(255,255,255,0.5);
+        cursor: pointer; color: var(--text-main);
+        align-items: center; justify-content: center;
+        margin-right: auto;
+        flex-shrink: 0;
+    }
+    .header-toggle:hover { background: #fff; }
+
+    .search-bar {
+        display: flex; align-items: center;
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 100px; padding: 8px 16px; width: 320px; gap: 10px;
+    }
+    .search-bar svg { width: 18px; height: 18px; color: var(--text-muted); flex-shrink: 0; }
+    .search-bar input {
+        border: none; background: transparent; outline: none;
+        font-size: 16px; flex: 1; min-width: 0; color: var(--text-main);
+    }
+    .search-bar input::placeholder { color: #999; }
+    .shortcut { font-size: 12px; color: #999; background: rgba(255,255,255,0.6); padding: 2px 6px; border-radius: 4px; }
+
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .action-btn {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        display: flex; justify-content: center; align-items: center;
+        cursor: pointer; color: var(--text-main);
+        flex-shrink: 0; font-size: 14px; font-weight: 500;
+    }
+    .action-btn:hover { background: #fff; }
+    .action-btn svg { width: 20px; height: 20px; }
+
+    /* ================= HERO ================= */
+    .hero {
+        position: relative; z-index: 2;
+        padding: 20px 80px 80px;
+        max-width: 1100px; margin: 0 auto;
+    }
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(14px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .hero > * { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    .hero > h1 { animation-delay: 0.03s; }
+    .hero > .subtitle { animation-delay: 0.12s; }
+    .hero > .prompt-box { animation-delay: 0.2s; }
+
+    h1 {
+        font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+        font-size: 76px; line-height: 1.08; font-weight: 400;
+        letter-spacing: -1px; margin-bottom: 20px;
+        color: #16171a;
+    }
+    h1 .light {
+        font-style: italic;
+        background: linear-gradient(100deg, #8a8f98, #b7bcc4 60%, #8a8f98);
+        -webkit-background-clip: text; background-clip: text;
+        color: transparent;
+    }
+
+    .subtitle {
+        font-size: 19px; color: #5c5f66; line-height: 1.5;
+        max-width: 520px; margin-bottom: 36px;
+        font-weight: 450; letter-spacing: -0.1px;
+    }
+
+    /* ================= PROMPT BOX ================= */
+    .prompt-box {
+        background: #fff; border-radius: 20px;
+        padding: 16px 20px 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04), 0 20px 50px -12px rgba(20,20,30,0.18);
+        margin-bottom: 24px;
+        border: 1px solid rgba(255,255,255,0.9);
+        transition: box-shadow 0.3s ease;
+    }
+    .prompt-box:focus-within {
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 24px 60px -12px rgba(20,20,30,0.24);
+    }
+
+    .attachments {
+        display: none;
+        flex-wrap: nowrap;
+        gap: 14px;
+        margin-bottom: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .attachments.visible { display: flex; }
+    .attachments::-webkit-scrollbar { display: none; }
+
+    .attachment {
+        display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+        width: 84px; max-width: 84px; flex-shrink: 0;
+        scroll-snap-align: start;
+    }
+    .attachment-tile { position: relative; width: 64px; height: 64px; flex-shrink: 0; cursor: pointer; }
+
+    .attachment-thumb {
+        width: 64px; height: 64px;
+        border-radius: 12px; object-fit: cover;
+        background: #f0f0f0; border: 1px solid rgba(0,0,0,0.08);
+        display: block;
+        transition: transform 0.15s;
+    }
+    .attachment-tile:hover .attachment-thumb { transform: scale(1.03); }
+
+    /* Document tile */
+    .doc-tile {
+        width: 64px; height: 64px; border-radius: 12px;
+        background: #f8f9fb; border: 1px solid rgba(0,0,0,0.08);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 2px;
+        padding: 6px;
+        transition: transform 0.15s;
+    }
+    .attachment-tile:hover .doc-tile { transform: scale(1.03); }
+
+    .doc-tile .doc-ext {
+        font-size: 9px; font-weight: 700;
+        letter-spacing: 0.5px; color: #fff;
+        padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+    }
+    .doc-tile.pdf .doc-ext { background: #e63946; }
+    .doc-tile.doc .doc-ext { background: #2b579a; }
+    .doc-tile.ppt .doc-ext { background: #d24726; }
+
+    .doc-tile .doc-icon {
+        width: 22px; height: 22px;
+        stroke: #555; fill: none; stroke-width: 1.8;
+    }
+    .doc-tile.pdf .doc-icon { stroke: #e63946; }
+    .doc-tile.doc .doc-icon { stroke: #2b579a; }
+    .doc-tile.ppt .doc-icon { stroke: #d24726; }
+
+    /* Pasted text tile */
+    .text-tile {
+        width: 64px; height: 64px; border-radius: 12px;
+        background: #f8f9fb;
+        border: 1px solid rgba(0,0,0,0.08);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 4px;
+        padding: 6px;
+        transition: transform 0.15s;
+    }
+    .attachment-tile:hover .text-tile { transform: scale(1.03); }
+
+    .text-tile .text-icon {
+        width: 26px; height: 26px;
+        stroke: #4a5568; fill: none;
+        stroke-width: 1.8;
+    }
+
+    .text-tile .text-badge {
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #fff;
+        background: #4a5568;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+
+    .attachment-remove {
+        position: absolute; top: -6px; right: -6px;
+        width: 20px; height: 20px; border-radius: 50%;
+        background: #111; color: #fff;
+        border: 2px solid #fff;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; padding: 0;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        z-index: 2;
+    }
+    .attachment-remove:hover { background: #ef4444; }
+    .attachment-remove svg {
+        width: 10px; height: 10px;
+        stroke: #fff; stroke-width: 3;
+        stroke-linecap: round; fill: none;
+    }
+
+    .attachment-meta { width: 100%; display: flex; flex-direction: column; gap: 1px; }
+    .attachment-name {
+        font-size: 11px; font-weight: 500; color: #333;
+        white-space: nowrap; overflow: hidden;
+        text-overflow: ellipsis; max-width: 120px;
+    }
+    .attachment-size { font-size: 10px; color: #999; }
+
+    .attachment-preview-text {
+        font-size: 10px;
+        color: #888;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        max-width: 120px;
+        word-break: break-word;
+    }
+
+    .prompt-box textarea {
+        width: 100%; border: none; outline: none; resize: none;
+        font-size: 16px; color: var(--text-main);
+        height: 44px; font-family: inherit; background: transparent;
+    }
+    .prompt-box textarea::placeholder { color: #999; }
+
+    .prompt-toolbar {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 10px; gap: 12px; flex-wrap: wrap;
+    }
+    .toolbar-left { display: flex; gap: 8px; }
+    .toolbar-icon {
+        background: transparent; border: none; cursor: pointer;
+        color: #777; padding: 6px; border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .toolbar-icon:hover { background: #f0f0f0; color: #111; }
+    .toolbar-icon svg { width: 20px; height: 20px; }
+
+    .toolbar-right { display: flex; align-items: center; gap: 12px; }
+    .dropdown-btn {
+        display: flex; align-items: center; gap: 6px;
+        background: #f5f5f5; border: none;
+        padding: 8px 16px; border-radius: 100px;
+        font-size: 14px; font-weight: 500; color: #333; cursor: pointer;
+    }
+    .dropdown-btn:hover { background: #eaeaea; }
+    .dropdown-btn svg { width: 16px; height: 16px; }
+
+    .submit-btn {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: linear-gradient(155deg, #2a2a2e, #0a0a0b);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.12);
+        color: #fff; border: none;
+        display: flex; justify-content: center; align-items: center;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .submit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn svg { width: 20px; height: 20px; }
+
+    .file-input-hidden { display: none; }
+
+    /* ================= CHAT MODE ================= */
+    /* Heading + subtitle collapse away smoothly when a message is sent */
+    #greetingHeading, #greetingSubtitle {
+        transition: opacity 0.3s ease, max-height 0.35s ease, margin 0.35s ease, transform 0.3s ease;
+        max-height: 300px;
+        overflow: hidden;
+    }
+    body.chat-mode #greetingHeading,
+    body.chat-mode #greetingSubtitle {
+        opacity: 0;
+        max-height: 0;
+        margin: 0;
+        transform: translateY(-10px);
+        pointer-events: none;
+    }
+
+    /* Main area becomes a header + scrollable-messages + fixed-composer column */
+    body.chat-mode .main { display: flex; flex-direction: column; overflow-y: hidden; }
+    body.chat-mode .top-header { flex-shrink: 0; }
+    body.chat-mode .hero {
+        flex: 1; min-height: 0;
+        display: flex; flex-direction: column;
+        justify-content: flex-start;
+        padding: 8px 40px 20px;
+    }
+
+    .chat-messages {
+        display: none;
+    }
+    body.chat-mode .chat-messages {
+        display: flex; flex-direction: column;
+        flex: 1; min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 18px;
+        padding: 16px 4px 20px;
+    }
+    body.chat-mode .chat-messages::-webkit-scrollbar { width: 6px; }
+    body.chat-mode .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 6px; }
+
+    /* Composer stays put, centered with a sensible max-width, at the bottom of the column */
+    body.chat-mode .prompt-box {
+        flex-shrink: 0;
+        width: 100%;
+        max-width: 760px;
+        margin: 0 auto;
+    }
+
+    /* ---- Message bubbles ---- */
+    .chat-message {
+        display: flex; flex-direction: column; gap: 8px;
+        max-width: 80%;
+        animation: fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .chat-message.user { align-self: flex-end; align-items: flex-end; }
+    .chat-message.assistant { align-self: flex-start; align-items: flex-start; }
+
+    .chat-bubble {
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 15px; line-height: 1.5;
+        word-wrap: break-word;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    .chat-message.user .chat-bubble {
+        background: #111; color: #fff;
+        border-radius: 18px 18px 4px 18px;
+    }
+    .chat-message.assistant .chat-bubble {
+        background: #fff; color: #16171a;
+        border: 1px solid rgba(0,0,0,0.06);
+        border-radius: 18px 18px 18px 4px;
+    }
+
+    /* Attachments that traveled from the composer into a sent message */
+    .chat-message-attachments.attachments { margin-bottom: 0; }
+    .chat-message-attachments .attachment-remove { display: none; }
+
+    /* Typing indicator */
+    .chat-bubble.typing-dots { display: flex; align-items: center; gap: 4px; padding: 14px 16px; }
+    .typing-dots span {
+        width: 6px; height: 6px; border-radius: 50%; background: #999;
+        animation: typingBlink 1.2s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBlink {
+        0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+        40% { opacity: 1; transform: translateY(-2px); }
+    }
+
+    /* ================= AI ACTIVITY TIMELINE PANEL ================= */
+    .activity-panel {
+        width: fit-content;
+        min-width: 300px;
+        max-width: 360px;
+        background: transparent;
+        border: none;
+        overflow: visible;
+        font-size: 13px;
+        color: #16171a;
+    }
+
+    .activity-header {
+        width: 100%;
+        display: flex; align-items: center; gap: 10px;
+        background: transparent; border: none; cursor: pointer;
+        padding: 4px 2px 10px;
+        color: inherit; font: inherit; text-align: left;
+    }
+
+    .activity-sparkle { width: 18px; height: 18px; flex-shrink: 0; color: #16171a; }
+    .activity-sparkle svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.6; fill: none; }
+
+    .activity-status {
+        font-size: 15px; font-weight: 700; color: #16171a;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .activity-meta { font-size: 12px; color: #9a9aa0; font-weight: 500; margin-left: 6px; }
+
+    .activity-chevron {
+        width: 16px; height: 16px; color: #9a9aa0; flex-shrink: 0; margin-left: auto;
+        stroke: currentColor; stroke-width: 2; fill: none;
+        transition: transform 0.2s ease;
+    }
+    .activity-panel.collapsed .activity-chevron { transform: rotate(-90deg); }
+
+    .activity-body {
+        max-height: 320px; opacity: 1;
+        padding: 0 2px 6px;
+        transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+    }
+    .activity-panel.collapsed .activity-body {
+        max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; overflow: hidden;
+    }
+
+    .activity-list { position: relative; display: flex; flex-direction: column; }
+    .activity-list::before {
+        content: '';
+        position: absolute; left: 9px; top: 12px; bottom: 12px; width: 1px;
+        background-image: linear-gradient(to bottom, #dcdce0 55%, transparent 45%);
+        background-size: 1px 7px; background-repeat: repeat-y;
+    }
+
+    .activity-item {
+        position: relative;
+        display: flex; align-items: center; gap: 12px;
+        padding: 6px 0;
+        font-size: 13.5px; color: #c4c4c9;
+        transition: color 0.25s ease;
+    }
+    .activity-item[data-state="done"] { color: #77777d; }
+    .activity-item[data-state="active"] { color: #16171a; font-weight: 700; }
+    .activity-item[data-state="upcoming"] { color: #c4c4c9; }
+
+    .activity-circle {
+        position: relative; z-index: 1; flex-shrink: 0;
+        width: 20px; height: 20px; border-radius: 50%;
+        background: #fff;
+        display: flex; align-items: center; justify-content: center;
+        border: 2px solid #e4e4e7;
+        transition: border-color 0.25s ease, background 0.25s ease;
+    }
+    .activity-item[data-state="done"] .activity-circle {
+        border-color: transparent; background: #22c55e;
+    }
+    .activity-circle .icon-check {
+        width: 11px; height: 11px; stroke: #fff; stroke-width: 3;
+        fill: none; opacity: 0; transform: scale(0.5);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .activity-item[data-state="done"] .icon-check { opacity: 1; transform: scale(1); }
+
+    .activity-item[data-state="active"] .activity-circle {
+        border-color: #16171a;
+        border-style: dashed;
+        animation: activitySpin 3s linear infinite;
+    }
+    @keyframes activitySpin { to { transform: rotate(360deg); } }
+
+    /* ================= CODE EXPLORER (Preview / Code result) ================= */
+    .chat-bubble.code-explorer-bubble {
+        padding: 0 !important;
+        border-radius: 16px !important;
+        overflow: hidden;
+        width: 100%;
+        max-width: 640px;
+    }
+
+    .code-explorer {
+        background: #121214;
+        color: #e4e4e7;
+        display: flex; flex-direction: column;
+        font-size: 13px;
+    }
+
+    .ce-topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; padding: 12px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        flex-wrap: wrap;
+    }
+    .ce-toggle {
+        display: flex; gap: 4px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 100px; padding: 3px;
+    }
+    .ce-toggle-btn {
+        display: flex; align-items: center; gap: 6px;
+        border: none; background: transparent; cursor: pointer;
+        color: #a0a0a6; font-size: 12.5px; font-weight: 600;
+        padding: 6px 12px; border-radius: 100px;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    .ce-toggle-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+    .ce-toggle-btn.active { background: #fff; color: #111; }
+
+    .ce-topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .ce-lang {
+        display: flex; align-items: center; gap: 4px;
+        font-size: 12.5px; font-weight: 600; color: #d4d4d8;
+    }
+    .ce-lang svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    .ce-action {
+        display: flex; align-items: center; gap: 6px;
+        background: transparent; border: none; cursor: pointer;
+        color: #b8b8be; font-size: 12.5px; font-weight: 500;
+        padding: 4px 2px;
+        transition: color 0.15s ease;
+    }
+    .ce-action:hover { color: #fff; }
+    .ce-action svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
+    .ce-action.copied { color: #34d399; }
+
+    .ce-run {
+        display: flex; align-items: center; gap: 6px;
+        background: #fff; color: #111; border: none; cursor: pointer;
+        font-size: 12.5px; font-weight: 700;
+        padding: 7px 14px; border-radius: 100px;
+        transition: transform 0.1s ease;
+    }
+    .ce-run:hover { transform: translateY(-1px); }
+    .ce-run svg { width: 12px; height: 12px; fill: currentColor; }
+
+    .ce-tabs {
+        display: flex; align-items: center; gap: 2px;
+        padding: 8px 10px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        overflow-x: auto;
+    }
+    .ce-tab {
+        display: flex; align-items: center; gap: 7px;
+        background: transparent; border: none; cursor: pointer;
+        color: #8a8a90; font-size: 12.5px; font-weight: 500;
+        padding: 8px 12px; border-radius: 8px 8px 0 0;
+        white-space: nowrap;
+        border-bottom: 2px solid transparent;
+        transition: color 0.15s ease, background 0.15s ease;
+    }
+    .ce-tab:hover { color: #d4d4d8; }
+    .ce-tab.active { color: #fff; background: rgba(255,255,255,0.05); border-bottom-color: #fff; }
+    .ce-tab-icon { width: 13px; height: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ce-tab-icon svg { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2; fill: none; }
+    .ce-tab[data-file="css"] .ce-tab-icon { color: #60a5fa; font-weight: 700; }
+    .ce-tab[data-file="js"] .ce-tab-icon { color: #fbbf24; font-weight: 700; font-size: 10px; }
+
+    .ce-body { position: relative; }
+    .ce-code-view {
+        max-height: 360px; overflow: auto;
+        background: #121214;
+    }
+    .ce-code-view::-webkit-scrollbar { width: 8px; height: 8px; }
+    .ce-code-view::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 8px; }
+
+    .ce-code {
+        display: flex;
+        margin: 0; padding: 14px 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 12.5px; line-height: 1.65;
+        white-space: pre;
+    }
+    .ce-line-numbers {
+        flex-shrink: 0;
+        display: flex; flex-direction: column;
+        padding: 0 14px 0 16px;
+        color: #55555c;
+        text-align: right;
+        user-select: none;
+        border-right: 1px solid rgba(255,255,255,0.06);
+        margin-right: 16px;
+    }
+    .ce-code-lines { flex: 1; padding-right: 20px; }
+    .ce-code-lines div, .ce-line-numbers div { min-height: 1.65em; }
+
+    .tok-tag { color: #f4708d; }
+    .tok-attr { color: #79c0ff; }
+    .tok-string { color: #8fd694; }
+    .tok-comment { color: #6b7280; font-style: italic; }
+    .tok-keyword { color: #c792ea; }
+    .tok-number { color: #f7a072; }
+    .tok-selector { color: #f4708d; }
+    .tok-prop { color: #79c0ff; }
+    .tok-punct { color: #b0b0b6; }
+
+    .ce-preview-view { display: none; background: #fff; }
+    .ce-preview-view.active { display: block; }
+    .ce-code-view.hidden { display: none; }
+    .ce-iframe { width: 100%; height: 360px; border: none; display: block; background: #fff; }
+
+    .code-explanation {
+        font-size: 13.5px; line-height: 1.55; color: #333;
+    }
+    .code-explanation p { margin: 0 0 8px; }
+    .code-explanation p:last-child { margin-bottom: 0; }
+    .code-explanation ul { margin: 0 0 8px; padding-left: 18px; }
+    .code-explanation li { margin-bottom: 4px; }
+    .code-explanation code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 12.5px; background: #f1f1f3; padding: 1px 5px; border-radius: 5px; color: #333;
+    }
+
+    /* ================= OVERLAY ================= */
+    .overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.4); z-index: 99;
+    }
+    body.drawer-open .overlay { display: block; }
+
+    /* ================= PREVIEW MODAL ================= */
+    .preview-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 10, 10, 0.7);
+        backdrop-filter: blur(6px);
+        z-index: 999;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .preview-modal.visible {
+        display: flex;
+        opacity: 1;
+    }
+
+    .preview-content {
+        background: #fff;
+        border-radius: 20px;
+        max-width: 800px;
+        width: 100%;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 20px 80px rgba(0,0,0,0.4);
+        transform: scale(0.96);
+        transition: transform 0.2s ease;
+    }
+    .preview-modal.visible .preview-content {
+        transform: scale(1);
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid #eee;
+        gap: 12px;
+    }
+    .preview-header-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        flex: 1;
+    }
+    .preview-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #111;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .preview-subtitle {
+        font-size: 12px;
+        color: #888;
+    }
+    .preview-close {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        background: #f5f5f5;
+        border: none;
+        cursor: pointer;
+        color: #333;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        transition: background 0.15s;
+    }
+    .preview-close:hover { background: #eaeaea; }
+    .preview-close svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+
+    .preview-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    .preview-body::-webkit-scrollbar { width: 8px; }
+    .preview-body::-webkit-scrollbar-thumb { background: #ddd; border-radius: 8px; }
+
+    .preview-body img {
+        max-width: 100%;
+        max-height: 60vh;
+        border-radius: 12px;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .preview-body pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: #222;
+        background: #f7f8fa;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #eee;
+        margin: 0;
+    }
+
+    .preview-doc-info {
+        text-align: center;
+        padding: 40px 20px;
+    }
+    .preview-doc-info .big-icon {
+        width: 80px; height: 80px;
+        margin: 0 auto 16px;
+        display: flex; align-items: center; justify-content: center;
+        background: #f8f9fb;
+        border-radius: 20px;
+        border: 1px solid #eee;
+    }
+    .preview-doc-info .big-icon svg {
+        width: 42px; height: 42px;
+        stroke: #555; fill: none; stroke-width: 1.5;
+    }
+    .preview-doc-info h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    .preview-doc-info p {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 20px;
+        word-break: break-all;
+    }
+
+    /* ================= RESPONSIVE ================= */
+    @media (max-width: 1400px) { .hero { padding: 20px 60px 60px; } }
+    @media (max-width: 1200px) {
+        h1 { font-size: 56px; letter-spacing: -1.5px; }
+        .hero { padding: 20px 40px 60px; }
+    }
+    @media (max-width: 1024px) {
+        .search-bar { width: 240px; }
+        h1 { font-size: 48px; }
+        .subtitle { font-size: 16px; }
+    }
+    @media (max-width: 900px) {
+        .sidebar {
+            position: fixed; top: 0; left: 0;
+            transform: translateX(-100%);
+            width: 260px !important;
+            box-shadow: 0 0 40px rgba(0,0,0,0.1);
+        }
+        body.drawer-open .sidebar { transform: translateX(0); }
+        body.collapsed .logo-text,
+        body.collapsed .nav-item span,
+        body.collapsed .user-info,
+        body.collapsed .chevron { display: revert; }
+        body.collapsed .nav-item { justify-content: flex-start; padding: 10px 12px; }
+        body.collapsed .logo-area { justify-content: space-between; padding: 0 8px; }
+
+        .hamburger { display: flex; }
+        .header-toggle { display: none; }
+        .top-header { padding: 16px 20px; gap: 12px; }
+        .search-bar { width: 200px; }
+        .shortcut { display: none; }
+
+        /* Heading + subtitle + prompt box start centered on the screen (idle Create state) */
+        .main { display: flex; flex-direction: column; }
+        .hero {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center;
+            padding: 20px 24px 24px;
+            margin: 0; max-width: none;
+        }
+        h1 { font-size: 50px; letter-spacing: -0.5px; margin-bottom: 14px; }
+        .subtitle { font-size: 18px; margin-bottom: 22px; }
+
+        /* Chat mode on small screens: tighter side padding */
+        body.chat-mode .hero { padding: 10px 16px 14px; }
+        body.chat-mode .prompt-box { max-width: none; }
+    }
+    @media (max-width: 640px) {
+        .top-header { padding: 12px 16px; }
+        .search-bar { display: none; }
+        .action-btn { width: 36px; height: 36px; }
+        .action-btn svg { width: 18px; height: 18px; }
+        .hamburger { width: 36px; height: 36px; }
+
+        .hero { padding: 10px 16px 40px; }
+        h1 { font-size: 42px; letter-spacing: -0.3px; margin-bottom: 14px; }
+        .subtitle { font-size: 17px; margin-bottom: 24px; }
+
+        .prompt-box { padding: 14px 16px; border-radius: 16px; }
+        .prompt-box textarea { font-size: 16px; height: 40px; }
+
+        .dropdown-btn { padding: 7px 12px; font-size: 13px; }
+        .submit-btn { width: 36px; height: 36px; }
+
+        .toolbar-icon { padding: 9px; }
+        .toolbar-left { gap: 4px; }
+
+        .preview-modal { padding: 12px; }
+        .preview-content { max-height: 90vh; }
+    }
+
+    @media (max-width: 380px) {
+        .hero { padding: 8px 14px 32px; }
+        h1 { font-size: 36px; margin-bottom: 12px; }
+        .subtitle { font-size: 16px; margin-bottom: 20px; }
+        .prompt-box { padding: 12px 14px; }
+        .dropdown-btn { padding: 7px 10px; font-size: 12px; }
+    }
+</style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo-area">
+            <div class="logo"><span class="logo-text">Ornàment</span></div>
+            <button class="toggle-btn" id="toggleBtn" aria-label="Toggle sidebar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+            </button>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="#" class="nav-item active" id="createNavItem">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/></svg>
+                <span>Create</span>
+            </a>
+            <a href="#" class="nav-item" id="projectsNavItem">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="8" y1="13" x2="16" y2="13"/></svg>
+                <span>Projects</span>
+            </a>
+            <a href="#" class="nav-item" id="templatesNavItem">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                <span>Templates</span>
+            </a>
+            <a href="#" class="nav-item" id="designSystemsNavItem">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg>
+                <span>Design Systems</span>
+            </a>
+            <a href="#" class="nav-item" id="assetsNavItem">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Assets</span>
+            </a>
+            <a href="#" class="nav-item" id="deployNavItem">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <span>Deploy</span>
+            </a>
+        </nav>
+
+        <div class="nav-history">
+            <div class="divider"></div>
+            <div class="nav-history-label">Recent Chats</div>
+            <div class="nav-history-list" id="chatHistoryList">
+                <div class="nav-history-empty">No chats yet</div>
+            </div>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="divider"></div>
+            <a href="#" class="nav-item" id="settingsNavItem">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span>Settings</span>
+            </a>
+
+            <div class="user-profile">
+                <div class="avatar"></div>
+                <div class="user-info">
+                    <span class="user-name">Krishna</span>
+                    <span class="user-plan">Pro Plan</span>
+                </div>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="main">
+        <header class="top-header">
+            <button class="hamburger" id="hamburgerBtn" aria-label="Open menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+
+            <button class="header-toggle" id="headerToggleBtn" aria-label="Toggle sidebar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+            </button>
+
+            <div class="search-bar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" placeholder="Search anything...">
+                <span class="shortcut">⌘ K</span>
+            </div>
+
+            <div class="header-actions">
+                <button class="action-btn" aria-label="Notifications">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </button>
+                <button class="action-btn" aria-label="Account">K</button>
+                <button class="action-btn" aria-label="Theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <section class="hero" id="hero">
+            <div class="chat-messages" id="chatMessages"></div>
+
+            <h1 id="greetingHeading">Good evening, <span class="light">Krishna.</span></h1>
+
+            <p class="subtitle" id="greetingSubtitle">What's cookin' in your mind tonight?</p>
+
+            <!-- ============ PROMPT BOX ============ -->
+            <div class="prompt-box" id="promptBox">
+                <div class="attachments" id="attachments"></div>
+
+                <textarea placeholder="Describe what you want to build..." id="promptInput"></textarea>
+
+                <div class="prompt-toolbar">
+                    <div class="toolbar-left">
+                        <button class="toolbar-icon" id="attachBtn" aria-label="Attach document" title="Attach documents (PDF, DOC, PPT)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        </button>
+                        <button class="toolbar-icon" id="imageBtn" aria-label="Attach images" title="Attach images">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        </button>
+                        <button class="toolbar-icon" aria-label="Add link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        </button>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="dropdown-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            Web
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <button class="submit-btn" id="submitBtn" aria-label="Submit">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <input type="file" accept="image/*" class="file-input-hidden" id="imageInput" multiple>
+                <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" class="file-input-hidden" id="docInput" multiple>
+            </div>
+        </section>
+    </main>
+
+    <!-- ============ PREVIEW MODAL ============ -->
+    <div class="preview-modal" id="previewModal">
+        <div class="preview-content" id="previewContent">
+            <div class="preview-header">
+                <div class="preview-header-info">
+                    <div class="preview-title" id="previewTitle">Preview</div>
+                    <div class="preview-subtitle" id="previewSubtitle"></div>
+                </div>
+                <button class="preview-close" id="previewClose" aria-label="Close preview">
+                    <svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="preview-body" id="previewBody"></div>
+        </div>
+    </div>
+
+<script>
+    /* ============ GREETING ============ */
+    (function () {
+        const NAME = 'Krishna';
+        const hour = new Date().getHours();
+        let greeting, subtitle;
+
+        if (hour < 5) {
+            greeting = 'Good night,'; subtitle = "What's cookin' in your mind tonight?";
+        } else if (hour < 12) {
+            greeting = 'Good morning,'; subtitle = "What are we building today?";
+        } else if (hour < 17) {
+            greeting = 'Good afternoon,'; subtitle = "Ready to bring your next idea to life?";
+        } else if (hour < 22) {
+            greeting = 'Good evening,'; subtitle = "What's cookin' in your mind tonight?";
+        } else {
+            greeting = 'Good night,'; subtitle = "Still up? Let's build something.";
+        }
+
+        const headingEl = document.getElementById('greetingHeading');
+        const subtitleEl = document.getElementById('greetingSubtitle');
+        if (headingEl) headingEl.innerHTML = `${greeting} <span class="light">${NAME}.</span>`;
+        if (subtitleEl) subtitleEl.textContent = subtitle;
+    })();
+
+    /* ============ SIDEBAR ============ */
+    const body = document.body;
+    const toggleBtn = document.getElementById('toggleBtn');
+    const headerToggleBtn = document.getElementById('headerToggleBtn');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const overlay = document.getElementById('overlay');
+    const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
+
+    function handleToggle() {
+        if (isMobile()) {
+            body.classList.toggle('drawer-open');
+        } else {
+            body.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', body.classList.contains('collapsed'));
+        }
+    }
+
+    toggleBtn.addEventListener('click', handleToggle);
+    headerToggleBtn.addEventListener('click', handleToggle);
+
+    hamburgerBtn.addEventListener('click', () => body.classList.add('drawer-open'));
+    overlay.addEventListener('click', () => body.classList.remove('drawer-open'));
+    window.addEventListener('resize', () => { if (!isMobile()) body.classList.remove('drawer-open'); });
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            item.classList.add('active');
+            if (isMobile()) body.classList.remove('drawer-open');
+        });
+    });
+
+    if (!isMobile() && localStorage.getItem('sidebarCollapsed') === 'true') {
+        body.classList.add('collapsed');
+    }
+
+    /* ============ ATTACHMENTS ============ */
+    const imageInput = document.getElementById('imageInput');
+    const docInput = document.getElementById('docInput');
+    const attachBtn = document.getElementById('attachBtn');
+    const imageBtn = document.getElementById('imageBtn');
+    const attachmentsEl = document.getElementById('attachments');
+    const promptBox = document.getElementById('promptBox');
+    const promptInput = document.getElementById('promptInput');
+
+    /* ============ CREATE -> CHAT TRANSITION ============ */
+    const chatMessagesEl = document.getElementById('chatMessages');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function scrollChatToBottom() {
+        chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    }
+
+    /* ============ CHAT HISTORY (Recent Chats) ============ */
+    const chatHistoryListEl = document.getElementById('chatHistoryList');
+    const createNavItem = document.getElementById('createNavItem');
+    let chatSessions = [];   // { id, title, html }
+    let currentChatId = null;
+
+    try {
+        const storedChats = localStorage.getItem('ornament_chat_sessions');
+        if (storedChats) chatSessions = JSON.parse(storedChats);
+    } catch(e) {}
+
+    function genChatId() {
+        return 'chat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    }
+
+    function deriveChatTitle() {
+        const firstUserBubble = chatMessagesEl.querySelector('.chat-message.user .chat-bubble');
+        if (firstUserBubble && firstUserBubble.textContent.trim()) {
+            const t = firstUserBubble.textContent.trim();
+            return t.length > 40 ? t.slice(0, 40) + '…' : t;
+        }
+        return 'New chat';
+    }
+
+    function saveCurrentChat() {
+        if (chatMessagesEl.children.length === 0) return;
+        if (!currentChatId) currentChatId = genChatId();
+        const snapshot = { id: currentChatId, title: deriveChatTitle(), html: chatMessagesEl.innerHTML };
+        const idx = chatSessions.findIndex(c => c.id === currentChatId);
+        if (idx >= 0) chatSessions[idx] = snapshot;
+        else chatSessions.unshift(snapshot);
+        try {
+            localStorage.setItem('ornament_chat_sessions', JSON.stringify(chatSessions));
+        } catch(e) {}
+        renderChatHistory();
+    }
+
+    function setActiveNavToCreate(isActive) {
+        document.querySelectorAll('.nav-menu .nav-item').forEach(n => n.classList.remove('active'));
+        if (isActive) createNavItem.classList.add('active');
+    }
+
+    function startNewChat() {
+        saveCurrentChat();
+        currentChatId = null;
+        chatMessagesEl.innerHTML = '';
+        document.body.classList.remove('chat-mode');
+        promptInput.value = '';
+        attachmentsEl.innerHTML = '';
+        refreshAttachmentsVisibility();
+        setActiveNavToCreate(true);
+        renderChatHistory();
+        if (isMobile()) body.classList.remove('drawer-open');
+        promptInput.focus();
+    }
+
+    function rewireExplorers(container) {
+        container.querySelectorAll('.code-explorer').forEach(wrap => {
+            const toggleBtns = wrap.querySelectorAll('.ce-toggle-btn');
+            const codeView = wrap.querySelector('.ce-code-view');
+            const previewView = wrap.querySelector('.ce-preview-view');
+            const copyBtn = wrap.querySelector('[data-action="copy"]');
+            const runBtn = wrap.querySelector('.ce-run');
+            const codeLinesEl = wrap.querySelector('.ce-code-lines');
+
+            toggleBtns.forEach(btn => {
+                btn.onclick = () => {
+                    const view = btn.dataset.view;
+                    toggleBtns.forEach(b => b.classList.toggle('active', b.dataset.view === view));
+                    if (view === 'preview') {
+                        codeView.classList.add('hidden');
+                        previewView.classList.add('active');
+                    } else {
+                        codeView.classList.remove('hidden');
+                        previewView.classList.remove('active');
+                    }
+                };
+            });
+
+            if (runBtn) {
+                runBtn.onclick = () => {
+                    toggleBtns.forEach(b => b.classList.toggle('active', b.dataset.view === 'preview'));
+                    codeView.classList.add('hidden');
+                    previewView.classList.add('active');
+                };
+            }
+
+            if (copyBtn) {
+                copyBtn.onclick = () => {
+                    const text = codeLinesEl ? codeLinesEl.innerText : '';
+                    navigator.clipboard.writeText(text).then(() => {
+                        copyBtn.classList.add('copied');
+                        const lbl = copyBtn.querySelector('.ce-label');
+                        if (lbl) lbl.textContent = 'Copied';
+                        setTimeout(() => {
+                            copyBtn.classList.remove('copied');
+                            if (lbl) lbl.textContent = 'Copy';
+                        }, 1500);
+                    });
+                };
+            }
+        });
+    }
+
+    function openChat(id) {
+        if (id === currentChatId) { if (isMobile()) body.classList.remove('drawer-open'); return; }
+        saveCurrentChat();
+        const chat = chatSessions.find(c => c.id === id);
+        if (!chat) return;
+        currentChatId = id;
+        chatMessagesEl.innerHTML = chat.html;
+        document.body.classList.add('chat-mode');
+        setActiveNavToCreate(false);
+        renderChatHistory();
+        rewireExplorers(chatMessagesEl);
+        scrollChatToBottom();
+        if (isMobile()) body.classList.remove('drawer-open');
+    }
+
+    function renderChatHistory() {
+        if (!chatHistoryListEl) return;
+        if (chatSessions.length === 0) {
+            chatHistoryListEl.innerHTML = '<div class="nav-history-empty">No chats yet</div>';
+            return;
+        }
+        chatHistoryListEl.innerHTML = chatSessions.map(c => `
+            <button type="button" class="history-item${c.id === currentChatId ? ' active' : ''}" data-chat-id="${c.id}" title="${escapeHtml(c.title)}">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span>${escapeHtml(c.title)}</span>
+            </button>
+        `).join('');
+        chatHistoryListEl.querySelectorAll('.history-item').forEach(btn => {
+            btn.addEventListener('click', () => openChat(btn.dataset.chatId));
+        });
+    }
+
+    renderChatHistory();
+
+    createNavItem.addEventListener('click', (e) => {
+        e.preventDefault();
+        startNewChat();
+    });
+
+    // Sidebar navigation feature modals
+    const projectsNavItem = document.getElementById('projectsNavItem');
+    const templatesNavItem = document.getElementById('templatesNavItem');
+    const designSystemsNavItem = document.getElementById('designSystemsNavItem');
+    const assetsNavItem = document.getElementById('assetsNavItem');
+    const deployNavItem = document.getElementById('deployNavItem');
+    const settingsNavItem = document.getElementById('settingsNavItem');
+
+    if (projectsNavItem) {
+        projectsNavItem.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const res = await fetch('/api/projects');
+                const list = await res.json();
+                const container = document.createElement('div');
+                container.style.cssText = 'display:grid;gap:12px;max-height:420px;overflow-y:auto;padding-right:4px;';
+                if (list.length === 0) {
+                    container.innerHTML = '<p style="color:#888;">No projects generated in workspace yet.</p>';
+                } else {
+                    list.forEach(p => {
+                        const card = document.createElement('div');
+                        card.style.cssText = 'background:#18181b;border:1px solid #27272a;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;';
+                        card.innerHTML = `
+                            <div>
+                                <div style="font-weight:600;color:#fff;font-size:14px;">${escapeHtml(p.name)}</div>
+                                <div style="font-size:11px;color:#71717a;margin-top:2px;font-family:monospace;">${escapeHtml(p.path)}</div>
+                            </div>
+                            <button class="ce-action" style="padding:6px 14px;border-radius:8px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-weight:600;font-size:12px;">Preview</button>
+                        `;
+                        card.querySelector('button').onclick = (ev) => {
+                            ev.stopPropagation();
+                            window.open('/preview/' + encodeURIComponent(p.name), '_blank');
+                        };
+                        container.appendChild(card);
+                    });
+                }
+                openCustomModal('Workspace Projects', `${list.length} projects stored in workspace`, container);
+            } catch (err) {
+                openCustomModal('Projects', 'Error loading projects', document.createTextNode(err.message));
+            }
+        });
+    }
+
+    const TEMPLATES = [
+        {
+            title: 'AI Website Engineer Portfolio',
+            desc: 'High-performance developer showcase with dark terminal, telemetry cards, and project grid.',
+            prompt: 'Create a modern, dark-mode portfolio for an AI Website Engineer named Krishna with an interactive terminal, live telemetry counters, bento grid of AI projects, and a clean contact form.'
+        },
+        {
+            title: 'SaaS Platform Landing Page',
+            desc: 'Clean conversion-oriented landing page with product mock, feature grid, and pricing cards.',
+            prompt: 'Design a high-converting SaaS landing page for an autonomous software development platform with feature bento grid, transparent pricing tiers, and client logos.'
+        },
+        {
+            title: 'Minimalist Luxury Boutique',
+            desc: 'Swiss-style gallery with high typography contrast and modern product showcase.',
+            prompt: 'Build a minimalist luxury website for modern furniture with clean product showcase grid, warm amber aesthetic, and responsive bag drawer.'
+        },
+        {
+            title: 'Cyberpunk Web3 Analytics',
+            desc: 'Neon-cyan DeFi dashboard with telemetry metrics, trading visualizer, and dark surface.',
+            prompt: 'Design a futuristic Web3 analytics dashboard with cyber neon cyan accents, real-time metrics cards, protocol telemetry, and audit badge.'
+        }
+    ];
+
+    if (templatesNavItem) {
+        templatesNavItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            const container = document.createElement('div');
+            container.style.cssText = 'display:grid;gap:12px;max-height:420px;overflow-y:auto;padding-right:4px;';
+            TEMPLATES.forEach(tmpl => {
+                const card = document.createElement('div');
+                card.style.cssText = 'background:#18181b;border:1px solid #27272a;border-radius:12px;padding:16px;cursor:pointer;transition:border-color 0.2s;';
+                card.onmouseenter = () => card.style.borderColor = '#6366f1';
+                card.onmouseleave = () => card.style.borderColor = '#27272a';
+                card.innerHTML = `
+                    <div style="font-weight:700;color:#fff;font-size:15px;margin-bottom:4px;">${tmpl.title}</div>
+                    <div style="font-size:13px;color:#a1a1aa;margin-bottom:12px;">${tmpl.desc}</div>
+                    <button class="ce-action" style="padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid #27272a;cursor:pointer;font-size:12px;">Use Template</button>
+                `;
+                card.querySelector('button').onclick = () => {
+                    promptInput.value = tmpl.prompt;
+                    closePreview();
+                    promptInput.focus();
+                };
+                container.appendChild(card);
+            });
+            openCustomModal('Prompt Templates', 'Choose a template to quickly generate a custom site', container);
+        });
+    }
+
+    if (designSystemsNavItem) {
+        designSystemsNavItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            const container = document.createElement('div');
+            container.style.cssText = 'display:grid;gap:14px;max-height:420px;overflow-y:auto;';
+            const palettes = [
+                { name: 'Electric Indigo (Default)', hex: '#6366f1', bg: '#09090b', rule: '60% Obsidian Dark, 30% Zinc Surface, 10% Indigo Glow' },
+                { name: 'Emerald Matrix', hex: '#10b981', bg: '#080c09', rule: '60% Forest Black, 30% Deep Pine, 10% Emerald Accent' },
+                { name: 'Cyber Neon Cyan', hex: '#06b6d4', bg: '#080c12', rule: '60% Space Blue, 30% Steel Navy, 10% Cyan Neon' },
+                { name: 'Warm Luxury Amber', hex: '#f59e0b', bg: '#0c0a08', rule: '60% Charcoal, 30% Espresso, 10% Amber Gold' },
+                { name: 'Deep Royal Violet', hex: '#8b5cf6', bg: '#0a0812', rule: '60% Twilight Dark, 30% Plum Slate, 10% Violet Glow' }
+            ];
+            palettes.forEach(pal => {
+                const el = document.createElement('div');
+                el.style.cssText = `background:#18181b;border:1px solid #27272a;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;`;
+                el.innerHTML = `
+                    <div style="width:36px;height:36px;border-radius:10px;background:${pal.hex};box-shadow:0 0 12px ${pal.hex}40;flex-shrink:0;"></div>
+                    <div>
+                        <div style="font-weight:600;color:#fff;font-size:14px;">${pal.name}</div>
+                        <div style="font-size:12px;color:#a1a1aa;margin-top:2px;">${pal.rule}</div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+            openCustomModal('Design Systems', 'Ornàment strict 60-30-10 color balance engine', container);
+        });
+    }
+
+    if (assetsNavItem) {
+        assetsNavItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            const container = document.createElement('div');
+            container.style.cssText = 'padding:8px 0;color:#ccc;font-size:13px;line-height:1.6;';
+            container.innerHTML = `
+                <p>Ornàment supports drag-and-drop and attachment of:</p>
+                <ul style="margin:12px 0 16px 20px;">
+                    <li><strong>Images:</strong> PNG, JPG, WebP, SVG wireframes and design mockups</li>
+                    <li><strong>Documents:</strong> PDF specs, Word documents, PowerPoint presentations</li>
+                    <li><strong>Code & Copy:</strong> Automatic detection on paste with instant TXT badge</li>
+                </ul>
+                <p style="color:#888;font-size:12px;">Use the paperclip or photo button in the composer toolbar to attach assets to any prompt.</p>
+            `;
+            openCustomModal('Supported Assets', 'Media, wireframes, and design references', container);
+        });
+    }
+
+    if (deployNavItem) {
+        deployNavItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            const container = document.createElement('div');
+            container.style.cssText = 'display:grid;gap:12px;';
+            container.innerHTML = `
+                <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:16px;">
+                    <div style="font-weight:600;color:#fff;font-size:14px;margin-bottom:4px;">📦 Standalone ZIP Export</div>
+                    <div style="font-size:12px;color:#a1a1aa;">Download all generated files (HTML, CSS, JS) instantly using the Download button on any code bubble. Zero build tools required.</div>
+                </div>
+                <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:16px;">
+                    <div style="font-weight:600;color:#fff;font-size:14px;margin-bottom:4px;">🚀 1-Click Hosting</div>
+                    <div style="font-size:12px;color:#a1a1aa;">Drag the exported ZIP directly into <strong style="color:#fff;">Netlify Drop</strong>, <strong style="color:#fff;">Vercel</strong>, or <strong style="color:#fff;">Cloudflare Pages</strong> for instant global deployment.</div>
+                </div>
+                <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:16px;">
+                    <div style="font-weight:600;color:#fff;font-size:14px;margin-bottom:4px;">⚡ Local Live Preview</div>
+                    <div style="font-size:12px;color:#a1a1aa;">Click the Preview tab in any generation to inspect the live site within a sandboxed browser environment.</div>
+                </div>
+            `;
+            openCustomModal('Deployment & Hosting', 'Ship your site in seconds', container);
+        });
+    }
+
+    if (settingsNavItem) {
+        settingsNavItem.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const res = await fetch('/api/health');
+                const health = await res.json();
+                const sys = health.system || {};
+                const container = document.createElement('div');
+                container.style.cssText = 'display:grid;gap:10px;font-size:13px;';
+                container.innerHTML = `
+                    <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;">
+                        <span style="color:#888;">Host Hardware:</span>
+                        <strong style="color:#fff;">${sys.gpu_name || 'NVIDIA RTX 3050 Laptop GPU (6GB)'}</strong>
+                    </div>
+                    <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;">
+                        <span style="color:#888;">VRAM Status:</span>
+                        <strong style="color:#10b981;">${sys.gpu_vram_used_mb ? (sys.gpu_vram_used_mb + ' MB / ' + sys.gpu_vram_total_mb + ' MB') : 'Dedicated 6.0 GB'}</strong>
+                    </div>
+                    <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;">
+                        <span style="color:#888;">CPU Utilization:</span>
+                        <strong style="color:#fff;">${sys.cpu_percent ? sys.cpu_percent + '%' : 'Normal'}</strong>
+                    </div>
+                    <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;">
+                        <span style="color:#888;">Model Engine:</span>
+                        <strong style="color:#6366f1;">Qwen2.5-Coder (GGUF 4-Bit + LoRA)</strong>
+                    </div>
+                    <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;">
+                        <span style="color:#888;">Antigravity Server:</span>
+                        <strong style="color:#10b981;">Port 5050 Online</strong>
+                    </div>
+                `;
+                openCustomModal('System Telemetry & Settings', 'Workstation status and hardware telemetry', container);
+            } catch(err) {
+                openCustomModal('Settings', 'Status', document.createTextNode('Ornàment local studio active.'));
+            }
+        });
+    }
+
+    function openCustomModal(title, subtitle, contentEl) {
+        previewTitle.textContent = title;
+        previewSubtitle.textContent = subtitle;
+        previewBody.innerHTML = '';
+        previewBody.appendChild(contentEl);
+        previewModal.classList.add('visible');
+    }
+
+    function showAssistantTyping() {
+        const typing = document.createElement('div');
+        typing.className = 'chat-message assistant';
+        typing.innerHTML = '<div class="chat-bubble typing-dots"><span></span><span></span><span></span></div>';
+        chatMessagesEl.appendChild(typing);
+        scrollChatToBottom();
+
+        setTimeout(() => {
+            typing.remove();
+            const reply = document.createElement('div');
+            reply.className = 'chat-message assistant';
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.textContent = "Got it — I'm on it. Give me a moment while I put this together for you.";
+            reply.appendChild(bubble);
+            chatMessagesEl.appendChild(reply);
+            scrollChatToBottom();
+            saveCurrentChat();
+        }, 1100);
+    }
+
+    /* ============ LIVE ACTIVITY PANEL (generic engine) ============ */
+    // Each flow defines six main-status stages plus a four-item indented
+    // checklist that fills in as those stages pass, and how to render the
+    // final result bubble once the flow completes.
+
+    /* ---------- tiny syntax highlighter (no dependencies) ---------- */
+    function escapeCode(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlightHtml(code) {
+        let out = escapeCode(code);
+        out = out.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="tok-comment">$1</span>');
+        out = out.replace(/(&lt;!DOCTYPE[^&]*?&gt;)/gi, '<span class="tok-tag">$1</span>');
+        out = out.replace(/(&lt;\/?)([a-zA-Z][\w-]*)([^&]*?)(\/?&gt;)/g, (m, open, name, attrs, close) => {
+            const attrHtml = attrs.replace(
+                /([a-zA-Z_:][\w:.-]*)(\s*=\s*)("[^"]*"|'[^']*')/g,
+                '<span class="tok-attr">$1</span><span class="tok-punct">$2</span><span class="tok-string">$3</span>'
+            );
+            return '<span class="tok-tag">' + open + name + '</span>' + attrHtml + '<span class="tok-tag">' + close + '</span>';
+        });
+        return out;
+    }
+
+    function highlightCss(code) {
+        let out = escapeCode(code);
+        out = out.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="tok-comment">$1</span>');
+        out = out.replace(/([.#]?[a-zA-Z0-9_-]+(?:[ \t]*[,>][ \t]*[.#]?[a-zA-Z0-9_-]+)*)(\s*\{)/g, '<span class="tok-selector">$1</span>$2');
+        out = out.replace(/([a-zA-Z-]+)(\s*:\s*)([^;{}]+)(;)/g, '<span class="tok-prop">$1</span>$2<span class="tok-string">$3</span>$4');
+        return out;
+    }
+
+    function highlightJs(code) {
+        let out = escapeCode(code);
+        out = out.replace(/(\/\/[^\n]*)/g, '<span class="tok-comment">$1</span>');
+        out = out.replace(/('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)/g, '<span class="tok-string">$1</span>');
+        out = out.replace(/\b(const|let|var|function|return|if|else|for|while|document|window|addEventListener|new|class|export|import|from|true|false|null|querySelector|querySelectorAll)\b/g, '<span class="tok-keyword">$1</span>');
+        out = out.replace(/\b(\d+)\b/g, '<span class="tok-number">$1</span>');
+        return out;
+    }
+
+    const HIGHLIGHTERS = { html: highlightHtml, css: highlightCss, js: highlightJs };
+
+    function renderCodeLines(content, lang) {
+        const highlighted = HIGHLIGHTERS[lang](content);
+        const lines = highlighted.split('\n');
+        const numbers = lines.map((_, i) => `<div>${i + 1}</div>`).join('');
+        const body = lines.map(l => `<div>${l === '' ? '&nbsp;' : l}</div>`).join('');
+        return { numbers, body };
+    }
+
+    /* ---------- dependency-free ZIP builder (stored/uncompressed) ---------- */
+    let CRC_TABLE = null;
+    function crc32(str) {
+        if (!CRC_TABLE) {
+            CRC_TABLE = [];
+            for (let n = 0; n < 256; n++) {
+                let c = n;
+                for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                CRC_TABLE[n] = c;
+            }
+        }
+        const bytes = new TextEncoder().encode(str);
+        let crc = 0 ^ (-1);
+        for (let i = 0; i < bytes.length; i++) crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ bytes[i]) & 0xFF];
+        return (crc ^ (-1)) >>> 0;
+    }
+
+    function zipFiles(files) {
+        const encoder = new TextEncoder();
+        const chunks = [];
+        let offset = 0;
+        const push = (arr) => { chunks.push(arr); offset += arr.length; };
+        const u16 = (n) => new Uint8Array([n & 0xFF, (n >>> 8) & 0xFF]);
+        const u32 = (n) => new Uint8Array([n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF]);
+
+        const central = [];
+        files.forEach(file => {
+            const nameBytes = encoder.encode(file.name);
+            const dataBytes = encoder.encode(file.content);
+            const crc = crc32(file.content);
+            const size = dataBytes.length;
+            const localHeaderOffset = offset;
+
+            push(u32(0x04034b50)); push(u16(20)); push(u16(0)); push(u16(0));
+            push(u16(0)); push(u16(0));
+            push(u32(crc)); push(u32(size)); push(u32(size));
+            push(u16(nameBytes.length)); push(u16(0));
+            push(nameBytes); push(dataBytes);
+
+            central.push({ nameBytes, crc, size, localHeaderOffset });
+        });
+
+        const centralStart = offset;
+        central.forEach(entry => {
+            push(u32(0x02014b50)); push(u16(20)); push(u16(20)); push(u16(0)); push(u16(0));
+            push(u16(0)); push(u16(0));
+            push(u32(entry.crc)); push(u32(entry.size)); push(u32(entry.size));
+            push(u16(entry.nameBytes.length)); push(u16(0)); push(u16(0));
+            push(u16(0)); push(u16(0)); push(u32(0));
+            push(u32(entry.localHeaderOffset));
+            push(entry.nameBytes);
+        });
+        const centralSize = offset - centralStart;
+
+        push(u32(0x06054b50));
+        push(u16(0)); push(u16(0));
+        push(u16(central.length)); push(u16(central.length));
+        push(u32(centralSize)); push(u32(centralStart)); push(u16(0));
+
+        return new Blob(chunks, { type: 'application/zip' });
+    }
+
+    function downloadZip(files, zipName) {
+        const blob = zipFiles(files);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = zipName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    /* ---------- demo landing-page source the flow "builds" ---------- */
+    function generateLandingPageFiles() {
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ornament — Turn Ideas Into Reality</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="script.js"><\/script>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">Ornament</div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#about">About</a>
+        <a href="#cta" class="btn">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <h1>Turn ideas into reality</h1>
+    <p>Everything you need to plan, build, and ship your next project — without the busywork.</p>
+    <div class="hero-actions">
+      <a href="#cta" class="btn btn-primary">Get Started</a>
+      <a href="#features" class="btn btn-ghost">See features</a>
+    </div>
+  </header>
+
+  <section id="features" class="features">
+    <div class="feature-card">
+      <h3>Plan</h3>
+      <p>Lay out your project in minutes with clear, structured steps.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Build</h3>
+      <p>Move from idea to working product without switching tools.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Ship</h3>
+      <p>Launch with confidence using built-in checks along the way.</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>&copy; 2026 Ornament. All rights reserved.</p>
+  </footer>
+</body>
+</html>
+`;
+
+        const css = `* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  color: #16171a;
+  background: #fafafa;
+}
+
+.navbar {
+  border-bottom: 1px solid #eee;
+  background: #fff;
+}
+
+.nav-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav-links a {
+  color: #444;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn {
+  padding: 9px 18px;
+  border-radius: 100px;
+  font-weight: 600;
+}
+
+.nav-links .btn {
+  background: #111;
+  color: #fff;
+}
+
+.hero {
+  max-width: 700px;
+  margin: 90px auto;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.hero h1 {
+  font-size: 48px;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  letter-spacing: -1px;
+}
+
+.hero p {
+  font-size: 18px;
+  color: #5c5f66;
+  margin-bottom: 32px;
+}
+
+.hero-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.btn-primary {
+  background: #111;
+  color: #fff;
+  border: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #111;
+  border: 1px solid #ddd;
+}
+
+.features {
+  max-width: 1000px;
+  margin: 0 auto 100px;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.feature-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.feature-card h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.feature-card p {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.footer {
+  text-align: center;
+  padding: 30px 24px;
+  color: #999;
+  font-size: 13px;
+  border-top: 1px solid #eee;
+}
+
+@media (max-width: 720px) {
+  .nav-links { gap: 14px; }
+  .nav-links a:not(.btn) { display: none; }
+  .features { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 34px; }
+}
+`;
+
+        const js = `// Smooth-scroll for on-page anchor links
+document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+  link.addEventListener('click', function (e) {
+    const target = document.querySelector(link.getAttribute('href'));
+    if (!target) return;
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+`;
+
+        return [
+            { id: 'html', name: 'index.html', lang: 'html', content: html },
+            { id: 'css', name: 'styles.css', lang: 'css', content: css },
+            { id: 'js', name: 'script.js', lang: 'js', content: js }
+        ];
+    }
+
+    function buildPreviewDoc(files) {
+        const htmlFile = files.find(f => f.id === 'html' || f.name.endsWith('.html')) || files[0];
+        const cssFile = files.find(f => f.id === 'css' || f.name.endsWith('.css')) || { content: '' };
+        const jsFile = files.find(f => f.id === 'js' || f.name.endsWith('.js')) || { content: '' };
+        let html = htmlFile ? htmlFile.content : '';
+        const css = cssFile ? cssFile.content : '';
+        const js = jsFile ? jsFile.content : '';
+
+        if (html.includes('<link rel="stylesheet" href="styles.css" />')) {
+            html = html.replace('<link rel="stylesheet" href="styles.css" />', `<style>${css}</style>`);
+        } else if (html.includes('<link rel="stylesheet" href="styles.css">')) {
+            html = html.replace('<link rel="stylesheet" href="styles.css">', `<style>${css}</style>`);
+        } else if (html.includes('</head>')) {
+            html = html.replace('</head>', `<style>${css}</style></head>`);
+        } else {
+            html = `<style>${css}</style>` + html;
+        }
+
+        if (html.includes('<script defer src="script.js"><\/script>')) {
+            html = html.replace('<script defer src="script.js"><\/script>', `<script defer>${js}<\/script>`);
+        } else if (html.includes('<script src="script.js"><\/script>')) {
+            html = html.replace('<script src="script.js"><\/script>', `<script defer>${js}<\/script>`);
+        } else if (html.includes('<\/body>')) {
+            html = html.replace('<\/body>', `<script defer>${js}<\/script><\/body>`);
+        } else {
+            html = html + `<script defer>${js}<\/script>`;
+        }
+        return html;
+    }
+
+    const FILE_ICONS = {
+        html: '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        css: '#',
+        js: 'JS'
+    };
+
+    function buildCodeExplorer(files, projectName = 'ornament-site') {
+        const wrap = document.createElement('div');
+        wrap.className = 'chat-bubble code-explorer-bubble';
+        wrap.innerHTML = `
+            <div class="code-explorer">
+                <div class="ce-topbar">
+                    <div class="ce-toggle">
+                        <button class="ce-toggle-btn" type="button" data-view="preview">
+                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Preview
+                        </button>
+                        <button class="ce-toggle-btn active" type="button" data-view="code">
+                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                            Code
+                        </button>
+                    </div>
+                    <div class="ce-topbar-right">
+                        <span class="ce-lang">HTML</span>
+                        <button class="ce-action" type="button" data-action="copy">
+                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            <span class="ce-label">Copy</span>
+                        </button>
+                        <button class="ce-action" type="button" data-action="download">
+                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <span class="ce-label">Download</span>
+                        </button>
+                        <button class="ce-run" type="button">
+                            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Run
+                        </button>
+                    </div>
+                </div>
+                <div class="ce-tabs">
+                    ${files.map((f, i) => `
+                        <button class="ce-tab${i === 0 ? ' active' : ''}" type="button" data-file="${f.id}">
+                            <span class="ce-tab-icon">${f.lang === 'html' ? FILE_ICONS.html : FILE_ICONS[f.lang]}</span>
+                            ${f.name}
+                        </button>
+                    `).join('')}
+                </div>
+                <div class="ce-body">
+                    <div class="ce-code-view"><pre class="ce-code"><span class="ce-line-numbers"></span><span class="ce-code-lines"></span></pre></div>
+                    <div class="ce-preview-view"><iframe class="ce-iframe" sandbox="allow-scripts"></iframe></div>
+                </div>
+            </div>
+        `;
+
+        const toggleBtns = wrap.querySelectorAll('.ce-toggle-btn');
+        const tabBtns = wrap.querySelectorAll('.ce-tab');
+        const codeView = wrap.querySelector('.ce-code-view');
+        const previewView = wrap.querySelector('.ce-preview-view');
+        const iframe = wrap.querySelector('.ce-iframe');
+        const lineNumbersEl = wrap.querySelector('.ce-line-numbers');
+        const codeLinesEl = wrap.querySelector('.ce-code-lines');
+        const langLabel = wrap.querySelector('.ce-lang');
+        const copyBtn = wrap.querySelector('[data-action="copy"]');
+        const downloadBtn = wrap.querySelector('[data-action="download"]');
+        const runBtn = wrap.querySelector('.ce-run');
+
+        let activeFileId = files[0].id;
+
+        function renderActiveFile() {
+            const file = files.find(f => f.id === activeFileId);
+            const { numbers, body } = renderCodeLines(file.content, file.lang);
+            lineNumbersEl.innerHTML = numbers;
+            codeLinesEl.innerHTML = body;
+            langLabel.textContent = file.lang.toUpperCase();
+        }
+
+        function setView(view) {
+            toggleBtns.forEach(b => b.classList.toggle('active', b.dataset.view === view));
+            if (view === 'preview') {
+                codeView.classList.add('hidden');
+                previewView.classList.add('active');
+                iframe.srcdoc = buildPreviewDoc(files);
+            } else {
+                codeView.classList.remove('hidden');
+                previewView.classList.remove('active');
+            }
+        }
+
+        toggleBtns.forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+        tabBtns.forEach(btn => btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeFileId = btn.dataset.file;
+            renderActiveFile();
+        }));
+
+        const copyLabel = copyBtn.querySelector('.ce-label');
+        copyBtn.addEventListener('click', () => {
+            const file = files.find(f => f.id === activeFileId);
+            navigator.clipboard.writeText(file.content).then(() => {
+                copyBtn.classList.add('copied');
+                copyLabel.textContent = 'Copied';
+                setTimeout(() => { copyBtn.classList.remove('copied'); copyLabel.textContent = 'Copy'; }, 1500);
+            });
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            downloadZip(files, (projectName || 'landing-page') + '.zip');
+        });
+
+        runBtn.addEventListener('click', () => setView('preview'));
+
+        renderActiveFile();
+        // Default to the Code tab, matching how a freshly built page is reviewed first.
+        setView('code');
+
+        wrap._explorerData = { files, projectName };
+        return wrap;
+    }
+
+    function buildCodeExplanation(files, customExplanation = null) {
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble code-explanation';
+        if (customExplanation) {
+            let htmlText = escapeHtml(customExplanation);
+            htmlText = htmlText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            htmlText = htmlText.replace(/`([^`]+)`/g, '<code>$1</code>');
+            const lines = htmlText.split('\n');
+            let inList = false;
+            let resultHtml = '';
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('- ')) {
+                    if (!inList) { resultHtml += '<ul>'; inList = true; }
+                    resultHtml += `<li>${trimmed.slice(2)}</li>`;
+                } else {
+                    if (inList) { resultHtml += '</ul>'; inList = false; }
+                    if (trimmed) resultHtml += `<p>${trimmed}</p>`;
+                }
+            });
+            if (inList) resultHtml += '</ul>';
+            resultHtml += `<p>Click <strong>Preview</strong> to see it rendered live, or <strong>Download</strong> to get all files as a ready-to-host ZIP.</p>`;
+            bubble.innerHTML = resultHtml;
+        } else {
+            bubble.innerHTML = `
+                <p>Here's a single-page landing site, split into three files:</p>
+                <ul>
+                    <li><code>index.html</code> — the markup: a navbar, a hero section with a headline and two call-to-action buttons, a three-card features section, and a footer.</li>
+                    <li><code>styles.css</code> — layout and styling: a centered max-width layout, a responsive grid for the feature cards, and a mobile breakpoint that stacks everything on small screens.</li>
+                    <li><code>script.js</code> — one small enhancement: smooth-scrolling when a nav link points to a section on the same page.</li>
+                </ul>
+                <p>Click <strong>Preview</strong> to see it rendered live, or <strong>Download</strong> to get all three files as a ready-to-host ZIP.</p>
+            `;
+        }
+        return bubble;
+    }
+
+    const DEFAULT_ENGINEERING_FLOW = {
+        headerLabel: 'Ornàment Engineer synthesizing project...',
+        doneLabel: 'Website ready',
+        items: [
+            'Understanding your request & architecture',
+            'Planning page structure & theme tokens',
+            'Designing layout & 60-30-10 palette',
+            'Writing code files (HTML, CSS, JS)...',
+            'Optimizing responsiveness & accessibility',
+            'Finalizing and preparing preview'
+        ]
+    };
+
+    const SPARKLE_ICON = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.3L19 10l-5.2 1.7L12 17l-1.8-5.3L5 10l5.2-1.7L12 3z"/><path d="M19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16z"/></svg>';
+
+    function createActivityPanel(flow) {
+        const panel = document.createElement('div');
+        panel.className = 'activity-panel';
+        panel.innerHTML = `
+            <button class="activity-header" type="button" aria-expanded="true">
+                <span class="activity-sparkle">${SPARKLE_ICON}</span>
+                <span class="activity-status">${flow.headerLabel}</span>
+                <svg class="activity-chevron" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="activity-body">
+                <div class="activity-list">
+                    ${flow.items.map((label, i) => `
+                        <div class="activity-item" data-index="${i}" data-state="${i === 0 ? 'active' : 'upcoming'}">
+                            <span class="activity-circle">
+                                <svg class="icon-check" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            </span>
+                            <span class="activity-label">${label}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        const header = panel.querySelector('.activity-header');
+        header.addEventListener('click', () => {
+            const collapsed = panel.classList.toggle('collapsed');
+            header.setAttribute('aria-expanded', String(!collapsed));
+        });
+
+        panel._statusEl = panel.querySelector('.activity-status');
+        panel._items = Array.from(panel.querySelectorAll('.activity-item'));
+        return panel;
+    }
+
+    function updateActivityPanel(panel, flow, activeIndex) {
+        panel._items.forEach((item, i) => {
+            item.dataset.state = i < activeIndex ? 'done' : (i === activeIndex ? 'active' : 'upcoming');
+        });
+    }
+
+    function finalizeActivityPanel(panel, flow, elapsedSeconds) {
+        panel._items.forEach(item => item.dataset.state = 'done');
+        panel._statusEl.textContent = flow.doneLabel;
+        panel.classList.add('collapsed');
+        panel.querySelector('.activity-header').setAttribute('aria-expanded', 'false');
+        const meta = document.createElement('span');
+        meta.className = 'activity-meta';
+        meta.textContent = `${elapsedSeconds}s`;
+        panel._statusEl.after(meta);
+    }
+
+    async function showAssistantActivityFlow(flow, userPrompt, attachmentsData) {
+        const reply = document.createElement('div');
+        reply.className = 'chat-message assistant';
+        const panel = createActivityPanel(flow);
+        reply.appendChild(panel);
+        chatMessagesEl.appendChild(reply);
+        scrollChatToBottom();
+
+        const startedAt = Date.now();
+        let stepIndex = 0;
+        updateActivityPanel(panel, flow, 0);
+
+        const stepTimer = setInterval(() => {
+            if (stepIndex < flow.items.length - 2) {
+                stepIndex++;
+                updateActivityPanel(panel, flow, stepIndex);
+                scrollChatToBottom();
+            }
+        }, 550);
+
+        try {
+            const res = await fetch('/api/generate-site', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: userPrompt,
+                    attachments: attachmentsData
+                })
+            });
+
+            if (!res.ok) throw new Error('API status ' + res.status);
+            const data = await res.json();
+            clearInterval(stepTimer);
+
+            updateActivityPanel(panel, flow, flow.items.length - 1);
+            setTimeout(() => {
+                const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
+                finalizeActivityPanel(panel, flow, elapsed);
+                const explorer = buildCodeExplorer(data.files, data.project_name);
+                const explanation = buildCodeExplanation(data.files, data.explanation);
+                reply.appendChild(explorer);
+                reply.appendChild(explanation);
+                scrollChatToBottom();
+                saveCurrentChat();
+            }, 300);
+
+        } catch (err) {
+            console.warn('Backend unavailable, using client fallback:', err);
+            clearInterval(stepTimer);
+            const fallbackFiles = generateLandingPageFiles();
+            const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
+            finalizeActivityPanel(panel, flow, elapsed);
+            const explorer = buildCodeExplorer(fallbackFiles, 'landing-page');
+            const explanation = buildCodeExplanation(fallbackFiles);
+            reply.appendChild(explorer);
+            reply.appendChild(explanation);
+            scrollChatToBottom();
+            saveCurrentChat();
+        }
+    }
+
+    function sendMessage() {
+        const text = promptInput.value.trim();
+        const hasAttachments = attachmentsEl.children.length > 0;
+        if (!text && !hasAttachments) return;
+
+        // Capture attachments data before DOM nodes are moved
+        const attachmentsData = [];
+        Array.from(attachmentsEl.children).forEach(el => {
+            if (el._previewData) {
+                attachmentsData.push({
+                    type: el._previewData.type,
+                    name: el._previewData.name || '',
+                    content: el._previewData.text || '',
+                    size: el._previewData.size || '',
+                    ext: el._previewData.ext || ''
+                });
+            }
+        });
+
+        // Build the outgoing user message from whatever is currently in the composer
+        const messageEl = document.createElement('div');
+        messageEl.className = 'chat-message user';
+
+        if (hasAttachments) {
+            const attWrap = document.createElement('div');
+            attWrap.className = 'attachments visible chat-message-attachments';
+            while (attachmentsEl.firstChild) {
+                attWrap.appendChild(attachmentsEl.firstChild);
+            }
+            messageEl.appendChild(attWrap);
+        }
+
+        if (text) {
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.textContent = text;
+            messageEl.appendChild(bubble);
+        }
+
+        document.body.classList.add('chat-mode');
+        chatMessagesEl.appendChild(messageEl);
+        scrollChatToBottom();
+
+        // Clear composer
+        promptInput.value = '';
+        refreshAttachmentsVisibility();
+        promptInput.focus();
+
+        showAssistantActivityFlow(DEFAULT_ENGINEERING_FLOW, text, attachmentsData);
+    }
+
+    submitBtn.addEventListener('click', sendMessage);
+    promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    imageBtn.addEventListener('click', () => imageInput.click());
+    attachBtn.addEventListener('click', () => docInput.click());
+
+    const ALLOWED_DOCS = ['pdf', 'doc', 'docx', 'ppt', 'pptx'];
+    const getExt = (name) => name.split('.').pop().toLowerCase();
+    const isImage = (file) => file.type.startsWith('image/');
+    const isDoc = (file) => ALLOWED_DOCS.includes(getExt(file.name));
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function docTypeKey(ext) {
+        if (ext === 'pdf') return 'pdf';
+        if (ext === 'doc' || ext === 'docx') return 'doc';
+        if (ext === 'ppt' || ext === 'pptx') return 'ppt';
+        return 'doc';
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    /* ---------- IMAGE ATTACHMENT ---------- */
+    function createImageAttachment(file, dataUrl) {
+        const wrap = document.createElement('div');
+        wrap.className = 'attachment';
+        wrap.innerHTML = `
+            <div class="attachment-tile" data-type="image" title="Click to preview">
+                <img class="attachment-thumb" src="${dataUrl}" alt="">
+                <button class="attachment-remove" aria-label="Remove">
+                    <svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="attachment-meta">
+                <div class="attachment-name" title="${file.name}">${file.name}</div>
+                <div class="attachment-size">${formatSize(file.size)}</div>
+            </div>
+        `;
+        wrap._previewData = { type: 'image', src: dataUrl, name: file.name, size: formatSize(file.size) };
+        return wrap;
+    }
+
+    /* ---------- DOCUMENT ATTACHMENT ---------- */
+    function createDocAttachment(file) {
+        const ext = getExt(file.name);
+        const typeKey = docTypeKey(ext);
+        const wrap = document.createElement('div');
+        wrap.className = 'attachment';
+        wrap.innerHTML = `
+            <div class="attachment-tile" data-type="document" title="Click to preview">
+                <div class="doc-tile ${typeKey}">
+                    <svg class="doc-icon" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    <span class="doc-ext">${ext}</span>
+                </div>
+                <button class="attachment-remove" aria-label="Remove">
+                    <svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="attachment-meta">
+                <div class="attachment-name" title="${file.name}">${file.name}</div>
+                <div class="attachment-size">${formatSize(file.size)}</div>
+            </div>
+        `;
+        wrap._previewData = { type: 'document', name: file.name, size: formatSize(file.size), ext: ext };
+        return wrap;
+    }
+
+    /* ---------- PASTED TEXT ATTACHMENT ---------- */
+    function createTextAttachment(text) {
+        const truncated = text.length > 100 ? text.slice(0, 100) + '…' : text;
+        const wrap = document.createElement('div');
+        wrap.className = 'attachment';
+        wrap.innerHTML = `
+            <div class="attachment-tile" data-type="text" title="Click to preview">
+                <div class="text-tile">
+                    <svg class="text-icon" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="8" y1="13" x2="16" y2="13"/>
+                        <line x1="8" y1="17" x2="14" y2="17"/>
+                    </svg>
+                    <span class="text-badge">TXT</span>
+                </div>
+                <button class="attachment-remove" aria-label="Remove">
+                    <svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="attachment-meta">
+                <div class="attachment-name">Pasted text</div>
+                <div class="attachment-preview-text">${escapeHtml(truncated)}</div>
+            </div>
+        `;
+        wrap._previewData = { type: 'text', text: text, size: formatSize(text.length) };
+        return wrap;
+    }
+
+    function refreshAttachmentsVisibility() {
+        if (attachmentsEl.children.length > 0) attachmentsEl.classList.add('visible');
+        else attachmentsEl.classList.remove('visible');
+    }
+
+    function wireRemove(el) {
+        const removeBtn = el.querySelector('.attachment-remove');
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            el.remove();
+            refreshAttachmentsVisibility();
+        });
+    }
+
+    function wirePreview(el) {
+        const tile = el.querySelector('.attachment-tile');
+        tile.addEventListener('click', (e) => {
+            if (e.target.closest('.attachment-remove')) return;
+            if (el._previewData) openPreview(el._previewData);
+        });
+    }
+
+    function addImageFile(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const el = createImageAttachment(file, ev.target.result);
+                attachmentsEl.appendChild(el);
+                wireRemove(el);
+                wirePreview(el);
+                resolve();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function addDocFile(file) {
+        if (!isDoc(file)) return;
+        const el = createDocAttachment(file);
+        attachmentsEl.appendChild(el);
+        wireRemove(el);
+        wirePreview(el);
+    }
+
+    function addTextAttachment(text) {
+        if (!text || !text.trim()) return;
+        const el = createTextAttachment(text);
+        attachmentsEl.appendChild(el);
+        wireRemove(el);
+        wirePreview(el);
+        refreshAttachmentsVisibility();
+    }
+
+    async function processFiles(files) {
+        const arr = Array.from(files);
+        const unsupported = [];
+
+        for (const file of arr) {
+            if (isImage(file)) await addImageFile(file);
+            else if (isDoc(file)) addDocFile(file);
+            else unsupported.push(file.name);
+        }
+
+        if (unsupported.length) {
+            alert('Skipped unsupported files:\n' + unsupported.join('\n') +
+                  '\n\nOnly images, PDF, DOC/DOCX, and PPT/PPTX are allowed.');
+        }
+
+        refreshAttachmentsVisibility();
+    }
+
+    imageInput.addEventListener('change', (e) => {
+        processFiles(e.target.files);
+        imageInput.value = '';
+    });
+
+    docInput.addEventListener('change', (e) => {
+        processFiles(e.target.files);
+        docInput.value = '';
+    });
+
+    promptBox.addEventListener('dragover', (e) => e.preventDefault());
+    promptBox.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length) processFiles(e.dataTransfer.files);
+    });
+
+    /* ============ PASTE HANDLER ============ */
+    promptInput.addEventListener('paste', (e) => {
+        const items = e.clipboardData.items;
+        let handledImage = false;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.startsWith('image/')) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    processFiles([file]);
+                    handledImage = true;
+                    break;
+                }
+            }
+        }
+
+        if (handledImage) return;
+
+        const text = e.clipboardData.getData('text/plain');
+        if (text && text.trim()) {
+            if (text.length > 60 || text.includes('\n')) {
+                e.preventDefault();
+                addTextAttachment(text);
+            }
+        }
+    });
+
+    /* ============ PREVIEW MODAL ============ */
+    const previewModal = document.getElementById('previewModal');
+    const previewBody = document.getElementById('previewBody');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewSubtitle = document.getElementById('previewSubtitle');
+    const previewClose = document.getElementById('previewClose');
+
+    function openPreview(data) {
+        previewBody.innerHTML = '';
+        previewTitle.textContent = '';
+        previewSubtitle.textContent = '';
+
+        if (data.type === 'image') {
+            previewTitle.textContent = data.name;
+            previewSubtitle.textContent = data.size;
+            const img = document.createElement('img');
+            img.src = data.src;
+            img.alt = data.name;
+            previewBody.appendChild(img);
+        }
+        else if (data.type === 'text') {
+            previewTitle.textContent = 'Pasted text';
+            previewSubtitle.textContent = data.size + ' · ' + data.text.length + ' characters';
+            const pre = document.createElement('pre');
+            pre.textContent = data.text;
+            previewBody.appendChild(pre);
+        }
+        else if (data.type === 'document') {
+            previewTitle.textContent = data.name;
+            previewSubtitle.textContent = data.size;
+
+            const info = document.createElement('div');
+            info.className = 'preview-doc-info';
+            info.innerHTML = `
+                <div class="big-icon">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                </div>
+                <h3>${escapeHtml(data.name)}</h3>
+                <p>${data.ext.toUpperCase()} file · ${data.size}</p>
+                <p style="color:#aaa;font-size:12px;margin-bottom:0;">Document preview isn't available in this demo. Open the file locally to view it.</p>
+            `;
+            previewBody.appendChild(info);
+        }
+
+        previewModal.classList.add('visible');
+    }
+
+    function closePreview() {
+        previewModal.classList.remove('visible');
+    }
+
+    previewClose.addEventListener('click', closePreview);
+    previewModal.addEventListener('click', (e) => {
+        if (e.target === previewModal) closePreview();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && previewModal.classList.contains('visible')) {
+            closePreview();
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, Response
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from typing import Optional, Dict, Any, List
@@ -65,6 +65,16 @@ def startup_event():
 @app.get("/favicon.ico")
 def favicon():
     return Response(status_code=204)
+
+@app.get("/bg.jpg")
+def studio_bg():
+    bg_file = settings.base_dir / "frontend" / "studio" / "bg.jpg"
+    if bg_file.exists():
+        return FileResponse(str(bg_file), media_type="image/jpeg")
+    old_bg = settings.base_dir / "my own made frontend" / "Ornàment" / "bg.jpg"
+    if old_bg.exists():
+        return FileResponse(str(old_bg), media_type="image/jpeg")
+    return Response(status_code=404)
 
 @app.get("/api/health")
 def get_health():
@@ -194,6 +204,29 @@ async def generate_custom(req: CustomSiteRequest):
         "checkpoint": cp[:8],
         "preview_url": active_preview_servers[req.project_name].url
     }
+
+class GenerateSiteAttachment(BaseModel):
+    type: str = "text"
+    name: Optional[str] = None
+    content: Optional[str] = None
+    size: Optional[str] = None
+    ext: Optional[str] = None
+
+class GenerateSiteRequest(BaseModel):
+    prompt: str = ""
+    project_name: Optional[str] = None
+    attachments: Optional[List[GenerateSiteAttachment]] = None
+
+@app.post("/api/generate-site")
+async def generate_site_endpoint(req: GenerateSiteRequest):
+    from ornament.generator.autonomous_site_builder import AutonomousSiteBuilder
+    att_dicts = [a.model_dump() for a in req.attachments] if req.attachments else []
+    result = AutonomousSiteBuilder.generate_site_bundle(
+        prompt=req.prompt,
+        attachments=att_dicts,
+        project_name=req.project_name
+    )
+    return result
 
 @app.post("/api/projects/{project_name}/simulate-bug")
 async def simulate_bug(project_name: str):
@@ -392,8 +425,14 @@ def build_datasets_endpoint(version: str = "dataset-v0.2"):
     pipeline = TrainingDataPipeline()
     return pipeline.build_datasets(version=version)
 
+@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/legacy-studio", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
-def index_page():
+def index_page(view: Optional[str] = None):
+    if view != "legacy":
+        studio_index = settings.base_dir / "frontend" / "studio" / "index.html"
+        if studio_index.exists():
+            return FileResponse(str(studio_index), media_type="text/html")
     ensure_preview_server("demo-portfolio")
     return """<!DOCTYPE html>
 <html lang="en" class="dark">
