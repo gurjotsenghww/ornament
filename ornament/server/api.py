@@ -236,7 +236,7 @@ def list_available_models():
     return [
         {
             "id": "qwen",
-            "name": "Qwen 2.5 Coder (Neural 3B)",
+            "name": "Orn\u00e0 2.5 Coder (Neural 3B)",
             "description": "Local GGUF neural model running on CPU, synthesizing bespoke architecture & copy",
             "ready": qwen_ready,
             "default": True

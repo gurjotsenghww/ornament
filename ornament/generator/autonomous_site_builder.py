@@ -324,7 +324,7 @@ class AutonomousSiteBuilder:
         if model and model.lower() in ["qwen", "qwen2.5", "neural"]:
             qwen_code_result = cls.query_qwen_for_code(prompt, attachment_text)
             if qwen_code_result:
-                model_name = "Qwen 2.5 Coder (Neural 3B)"
+                model_name = "Orn\u00e0 2.5 Coder (Neural 3B)"
 
         # Sanitize project slug
         if not project_name:
