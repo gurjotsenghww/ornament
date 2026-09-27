@@ -89,6 +89,13 @@ def list_projects():
             })
     return projects
 
+@app.get("/preview/{project_name}", response_class=HTMLResponse)
+def get_project_preview(project_name: str):
+    p_file = get_project_dir(project_name) / "public" / "preview.html"
+    if p_file.exists():
+        return HTMLResponse(content=p_file.read_text(encoding="utf-8"))
+    return HTMLResponse(content=f"<h1>Preview for {project_name} not found</h1>", status_code=404)
+
 @app.post("/api/projects/generate-portfolio")
 async def generate_portfolio(project_name: str = "demo-portfolio", intentional_bug: bool = False):
     p_dir = get_project_dir(project_name)
@@ -559,18 +566,22 @@ def index_page():
             <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
             <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
             <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
-            <span class="text-xs font-mono text-zinc-400 ml-2">Live Dev Preview</span>
+            <select id="project-selector" onchange="switchProjectPreview(this.value)" class="text-[11px] px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-white font-mono focus:outline-none ml-1">
+              <option value="elite-portfolio" selected>🏛️ Option B: Elite Systems Architect Portfolio</option>
+              <option value="saas-platform">⚡ Option A: Modern AI SaaS Platform</option>
+              <option value="digital-studio">💎 Option C: Atelier Digital Studio</option>
+              <option value="demo-portfolio">🚀 Demo Portfolio</option>
+            </select>
           </div>
           <div class="flex items-center space-x-1.5">
             <button onclick="setViewport('desktop')" id="vp-desktop" class="px-2 py-0.5 rounded text-[10px] bg-zinc-800 text-white font-mono border border-zinc-700">Desktop</button>
             <button onclick="setViewport('tablet')" id="vp-tablet" class="px-2 py-0.5 rounded text-[10px] bg-zinc-900 text-zinc-400 font-mono border border-zinc-800">Tablet</button>
             <button onclick="setViewport('mobile')" id="vp-mobile" class="px-2 py-0.5 rounded text-[10px] bg-zinc-900 text-zinc-400 font-mono border border-zinc-800">Mobile</button>
-            <a href="http://127.0.0.1:3456" target="_blank" class="text-xs text-indigo-400 hover:underline px-1 font-mono">↗ Popout</a>
             <button onclick="refreshPreview()" class="text-xs text-zinc-400 hover:text-white px-1">↻</button>
           </div>
         </div>
         <div class="flex-1 flex justify-center bg-black/60 rounded-lg overflow-hidden border border-surfaceBorder p-1">
-          <iframe id="preview-frame" src="http://127.0.0.1:3456" class="h-full rounded bg-black min-h-[440px] transition-all duration-300" style="width: 100%;"></iframe>
+          <iframe id="preview-frame" src="/preview/elite-portfolio" class="h-full rounded bg-black min-h-[440px] transition-all duration-300" style="width: 100%;"></iframe>
         </div>
       </div>
 
@@ -979,6 +990,11 @@ def index_page():
     function refreshPreview() {
       const frame = document.getElementById('preview-frame');
       frame.src = frame.src;
+    }
+
+    function switchProjectPreview(name) {
+      const frame = document.getElementById('preview-frame');
+      frame.src = '/preview/' + name;
     }
 
     function switchView(view) {
