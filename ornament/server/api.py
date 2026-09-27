@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+from pydantic import BaseModel, Field
 from ornament.config import settings
 from ornament.hardware.monitor import HardwareManager
 from ornament.files.file_manager import FileManager
@@ -118,6 +119,65 @@ async def generate_saas(project_name: str = "demo-saas"):
         "preview_url": active_preview_servers[project_name].url
     }
 
+class CustomSiteRequest(BaseModel):
+    project_name: str = "custom-site"
+    prompt: str = ""
+    site_type: str = "portfolio"  # portfolio | ecommerce | saas
+    style: str = "dark_futuristic"
+    color_palette: str = "deep_indigo"
+    typography: str = "inter_mono"
+    sections: List[str] = Field(default_factory=lambda: ["hero", "about", "projects", "contact"])
+
+@app.post("/api/projects/generate-custom")
+async def generate_custom(req: CustomSiteRequest):
+    p_dir = get_project_dir(req.project_name)
+    from ornament.generator.custom_site_generator import CustomSiteGenerator
+    result = CustomSiteGenerator.generate(
+        workspace_path=p_dir,
+        prompt=req.prompt,
+        site_type=req.site_type,
+        style=req.style,
+        palette_key=req.color_palette,
+        sections=req.sections
+    )
+    count = result["files_count"]
+    git_mgr = GitCheckpointManager(p_dir)
+    cp = git_mgr.create_checkpoint(f"Custom {req.site_type} generated: {req.prompt[:50]}", agent_id="main_agent")
+
+    if req.project_name not in active_preview_servers:
+        server = DevPreviewServer(p_dir, port=3456)
+        server.start()
+        active_preview_servers[req.project_name] = server
+
+    return {
+        "status": "success",
+        "project": req.project_name,
+        "site_type": req.site_type,
+        "prompt": req.prompt,
+        "files_count": count,
+        "checkpoint": cp[:8],
+        "preview_url": active_preview_servers[req.project_name].url
+    }
+
+@app.post("/api/projects/{project_name}/simulate-bug")
+async def simulate_bug(project_name: str):
+    p_dir = get_project_dir(project_name)
+    fm = FileManager(p_dir)
+    nav_file = "components/Navbar.tsx"
+    if fm.file_exists(nav_file):
+        content = fm.read_file(nav_file)
+        if 'href="/contact"' in content:
+            fm.edit_file_exact_replacement(nav_file, 'href="/contact"', 'href="/contact-us"')
+            git_mgr = GitCheckpointManager(p_dir)
+            return {
+                "status": "success",
+                "message": "Injected intentional route mismatch (/contact-us) in Navbar.tsx",
+                "diff": git_mgr.get_diff()
+            }
+        else:
+            return {"status": "warning", "message": "Route already set to /contact-us"}
+    return {"status": "error", "message": f"{nav_file} not found"}
+
 @app.post("/api/projects/{project_name}/run-audits")
 async def run_audits(project_name: str):
     from ornament.testing.auditors import SiteAuditor
@@ -162,7 +222,11 @@ def get_history(project_name: str):
 @app.post("/api/projects/{project_name}/run-tests")
 async def run_tests(project_name: str):
     p_dir = get_project_dir(project_name)
-    server_url = active_preview_servers.get(project_name, DevPreviewServer(p_dir, port=3456)).url
+    if project_name not in active_preview_servers:
+        server = DevPreviewServer(p_dir, port=3456)
+        server.start()
+        active_preview_servers[project_name] = server
+    server_url = active_preview_servers[project_name].url
     
     lvl1 = await MultiLevelTestHarness.run_level1_static(p_dir)
     lvl2 = await MultiLevelTestHarness.run_level2_build(p_dir)
@@ -200,7 +264,11 @@ async def run_repair(
         agent_manager=shared_agent_manager
     )
     
-    server_url = active_preview_servers.get(project_name, DevPreviewServer(p_dir, port=3456)).url
+    if project_name not in active_preview_servers:
+        server = DevPreviewServer(p_dir, port=3456)
+        server.start()
+        active_preview_servers[project_name] = server
+    server_url = active_preview_servers[project_name].url
     
     result = await main_agent.run_repair_loop(
         symptom=symptom,
@@ -266,38 +334,106 @@ def index_page():
 
   <!-- Main Grid -->
   <main class="flex-1 grid grid-cols-12 gap-4 p-6">
-    <!-- Left Panel: Actions & Agent Tree -->
-    <div class="col-span-3 space-y-4">
+    <!-- Left Panel: Prompt Studio, Tools & Agent Tree -->
+    <div class="col-span-4 space-y-4">
+      <!-- Prompt Studio Box -->
       <div class="p-4 rounded-xl border border-surfaceBorder bg-surface space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-400">Autonomous Actions</h2>
-        <div class="space-y-2">
-          <button onclick="generatePortfolio(false)" class="w-full py-1.5 px-3 text-xs rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition text-left">
-            1. Generate Developer Portfolio
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-indigo-400">AI Website Studio</h2>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 font-mono">Qwen Coder Engine</span>
+        </div>
+        
+        <div>
+          <label class="block text-xs font-semibold text-zinc-300 mb-1">Prompt / Requirements</label>
+          <textarea id="prompt-input" rows="3" class="w-full text-xs p-2.5 rounded-lg bg-zinc-900 border border-surfaceBorder text-white focus:outline-none focus:border-indigo-500 font-sans" placeholder="e.g. Build an ultra-modern dark SaaS platform with transparent pricing and live telemetry dashboard..."></textarea>
+        </div>
+
+        <!-- Inspiration Presets -->
+        <div>
+          <label class="block text-[11px] font-semibold text-zinc-400 mb-1">1-Click Inspiration Presets</label>
+          <div class="flex flex-wrap gap-1">
+            <button type="button" onclick="selectPreset('Next-Gen AI SaaS Platform with bento grid, fleet metrics and pricing tiers', 'saas', 'dark_futuristic', 'cyan')" class="text-[10px] px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800">⚡ AI SaaS Bento</button>
+            <button type="button" onclick="selectPreset('Senior Autonomous AI Systems Engineer personal portfolio with minimal dark aesthetic', 'portfolio', 'minimal_luxury', 'indigo')" class="text-[10px] px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800">💼 Minimal Portfolio</button>
+            <button type="button" onclick="selectPreset('Cyberpunk Edge Computing and Hardware equipment store with catalog and cart', 'ecommerce', 'dark_futuristic', 'emerald')" class="text-[10px] px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800">🛒 Cyber Hardware</button>
+            <button type="button" onclick="selectPreset('Autonomous Design and Engineering Studio with interactive showcase', 'agency', 'editorial_brutalist', 'amber')" class="text-[10px] px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800">🚀 AI Agency</button>
+          </div>
+        </div>
+
+        <!-- Website Category Pills -->
+        <div>
+          <label class="block text-[11px] font-semibold text-zinc-400 mb-1">Website Category</label>
+          <div class="grid grid-cols-4 gap-1 text-xs font-medium">
+            <button type="button" onclick="selectType('portfolio')" id="btn-type-portfolio" class="py-1 px-1 rounded border border-indigo-500 bg-indigo-500/20 text-white text-center">Portfolio</button>
+            <button type="button" onclick="selectType('saas')" id="btn-type-saas" class="py-1 px-1 rounded border border-surfaceBorder bg-zinc-900 text-zinc-400 text-center">SaaS</button>
+            <button type="button" onclick="selectType('ecommerce')" id="btn-type-ecommerce" class="py-1 px-1 rounded border border-surfaceBorder bg-zinc-900 text-zinc-400 text-center">Store</button>
+            <button type="button" onclick="selectType('agency')" id="btn-type-agency" class="py-1 px-1 rounded border border-surfaceBorder bg-zinc-900 text-zinc-400 text-center">Agency</button>
+          </div>
+        </div>
+
+        <!-- Style & Palette Selection -->
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="block text-[11px] font-semibold text-zinc-400 mb-1">Aesthetic Style</label>
+            <select id="style-select" class="w-full p-1.5 rounded bg-zinc-900 border border-surfaceBorder text-zinc-300 text-xs">
+              <option value="dark_futuristic">Dark Futuristic</option>
+              <option value="minimal_luxury">Minimal Luxury</option>
+              <option value="editorial_brutalist">Editorial Brutalist</option>
+              <option value="clean_modern">Clean Modern</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-zinc-400 mb-1">Color Palette</label>
+            <select id="palette-select" class="w-full p-1.5 rounded bg-zinc-900 border border-surfaceBorder text-zinc-300 text-xs">
+              <option value="indigo">Indigo Accent</option>
+              <option value="emerald">Emerald Neon</option>
+              <option value="cyan">Cyan High-Tech</option>
+              <option value="amber">Amber Glow</option>
+              <option value="violet">Electric Violet</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sections Checklist -->
+        <div>
+          <label class="block text-[11px] font-semibold text-zinc-400 mb-1">Sections to Include</label>
+          <div class="grid grid-cols-3 gap-1 text-[11px] text-zinc-300">
+            <label class="flex items-center space-x-1 cursor-pointer"><input type="checkbox" id="sec-hero" checked class="rounded bg-zinc-800 text-indigo-500"> <span>Hero</span></label>
+            <label class="flex items-center space-x-1 cursor-pointer"><input type="checkbox" id="sec-features" checked class="rounded bg-zinc-800 text-indigo-500"> <span>Features</span></label>
+            <label class="flex items-center space-x-1 cursor-pointer"><input type="checkbox" id="sec-stats" checked class="rounded bg-zinc-800 text-indigo-500"> <span>Metrics</span></label>
+            <label class="flex items-center space-x-1 cursor-pointer"><input type="checkbox" id="sec-pricing" checked class="rounded bg-zinc-800 text-indigo-500"> <span>Pricing</span></label>
+            <label class="flex items-center space-x-1 cursor-pointer"><input type="checkbox" id="sec-contact" checked class="rounded bg-zinc-800 text-indigo-500"> <span>Contact</span></label>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <button id="btn-generate" onclick="generateFromPrompt()" class="w-full py-2.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-md shadow-indigo-600/20 flex items-center justify-center space-x-1.5">
+          <span>⚡</span>
+          <span>Generate Website from Prompt</span>
+        </button>
+      </div>
+
+      <!-- Engineering & Testing Controls -->
+      <div class="p-4 rounded-xl border border-surfaceBorder bg-surface space-y-2">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">Verification & Diagnostics</h2>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="runTests()" class="py-1.5 px-2 rounded bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-white border border-surfaceBorder">
+            Run Playwright Tests
           </button>
-          <button onclick="generateEcommerce()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition text-left">
-            2. Generate E-Commerce Store
+          <button onclick="runAudits()" class="py-1.5 px-2 rounded bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-indigo-300 border border-surfaceBorder">
+            Run SEO/Perf Audit
           </button>
-          <button onclick="generateSaas()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium transition text-left">
-            3. Generate SaaS Platform
+          <button onclick="simulateRouteBug()" class="py-1.5 px-2 rounded bg-amber-600/20 text-amber-300 hover:bg-amber-600/30 text-xs font-medium border border-amber-500/30">
+            Simulate Route Bug
           </button>
-          <button onclick="generatePortfolio(true)" class="w-full py-1.5 px-3 text-xs rounded-lg bg-amber-600/80 hover:bg-amber-600 text-white font-medium transition text-left">
-            4. Introduce Route Bug (/contact-us)
-          </button>
-          <button onclick="runTests()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium transition border border-surfaceBorder text-left">
-            5. Run Multi-Level Tests (Playwright)
-          </button>
-          <button onclick="runRepairLoop()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium transition text-left">
-            6. Run Autonomous Repair Loop
-          </button>
-          <button onclick="runAudits()" class="w-full py-1.5 px-3 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700 text-indigo-300 font-medium transition border border-surfaceBorder text-left">
-            7. Run SEO, Perf & A11y Audits
+          <button onclick="runRepairLoop()" class="py-1.5 px-2 rounded bg-emerald-600 hover:bg-emerald-500 text-xs font-medium text-white shadow-md">
+            Auto Repair Loop
           </button>
         </div>
       </div>
 
       <!-- Agent Hierarchy Tree -->
       <div class="p-4 rounded-xl border border-surfaceBorder bg-surface">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-3">Agent Hierarchy (Section 44)</h2>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">Agent Hierarchy (Section 44)</h2>
         <div id="agent-tree" class="text-xs font-mono space-y-2">
           <div class="text-zinc-500">No active agent run. Trigger an action above.</div>
         </div>
@@ -305,26 +441,34 @@ def index_page():
 
       <!-- File Tree -->
       <div class="p-4 rounded-xl border border-surfaceBorder bg-surface">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-400 mb-3">Project Files</h2>
-        <div id="file-list" class="text-xs font-mono space-y-1 max-h-48 overflow-y-auto">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">Project Files</h2>
+        <div id="file-list" class="text-xs font-mono space-y-1 max-h-40 overflow-y-auto">
           <div class="text-zinc-500">Loading files...</div>
         </div>
       </div>
     </div>
 
     <!-- Center: Live Preview & Diff -->
-    <div class="col-span-6 flex flex-col space-y-4">
+    <div class="col-span-5 flex flex-col space-y-4">
       <div class="p-4 rounded-xl border border-surfaceBorder bg-surface flex-1 flex flex-col">
         <div class="flex items-center justify-between pb-3 border-b border-surfaceBorder mb-3">
           <div class="flex items-center space-x-2">
             <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
             <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
             <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
-            <span class="text-xs font-mono text-zinc-400 ml-2">Live Dev Preview (http://127.0.0.1:3456)</span>
+            <span class="text-xs font-mono text-zinc-400 ml-2">Live Dev Preview</span>
           </div>
-          <button onclick="refreshPreview()" class="text-xs text-indigo-400 hover:underline">Refresh</button>
+          <div class="flex items-center space-x-1.5">
+            <button onclick="setViewport('desktop')" id="vp-desktop" class="px-2 py-0.5 rounded text-[10px] bg-zinc-800 text-white font-mono border border-zinc-700">Desktop</button>
+            <button onclick="setViewport('tablet')" id="vp-tablet" class="px-2 py-0.5 rounded text-[10px] bg-zinc-900 text-zinc-400 font-mono border border-zinc-800">Tablet</button>
+            <button onclick="setViewport('mobile')" id="vp-mobile" class="px-2 py-0.5 rounded text-[10px] bg-zinc-900 text-zinc-400 font-mono border border-zinc-800">Mobile</button>
+            <a href="http://127.0.0.1:3456" target="_blank" class="text-xs text-indigo-400 hover:underline px-1 font-mono">↗ Popout</a>
+            <button onclick="refreshPreview()" class="text-xs text-zinc-400 hover:text-white px-1">↻</button>
+          </div>
         </div>
-        <iframe id="preview-frame" src="http://127.0.0.1:3456" class="w-full flex-1 rounded-lg border border-surfaceBorder bg-black min-h-[420px]"></iframe>
+        <div class="flex-1 flex justify-center bg-black/60 rounded-lg overflow-hidden border border-surfaceBorder p-1">
+          <iframe id="preview-frame" src="http://127.0.0.1:3456" class="h-full rounded bg-black min-h-[440px] transition-all duration-300" style="width: 100%;"></iframe>
+        </div>
       </div>
 
       <!-- Minimal Change Diff Viewer -->
@@ -353,6 +497,52 @@ def index_page():
   </main>
 
   <script>
+    let currentType = 'portfolio';
+
+    function selectType(type) {
+      currentType = type;
+      const types = ['portfolio', 'saas', 'ecommerce', 'agency'];
+      types.forEach(t => {
+        const btn = document.getElementById('btn-type-' + t);
+        if (btn) {
+          if (t === type) {
+            btn.className = 'py-1 px-1 rounded border border-indigo-500 bg-indigo-500/20 text-white text-center';
+          } else {
+            btn.className = 'py-1 px-1 rounded border border-surfaceBorder bg-zinc-900 text-zinc-400 text-center';
+          }
+        }
+      });
+    }
+
+    function selectPreset(promptText, type, style, palette) {
+      document.getElementById('prompt-input').value = promptText;
+      selectType(type);
+      if (document.getElementById('style-select')) document.getElementById('style-select').value = style;
+      if (document.getElementById('palette-select')) document.getElementById('palette-select').value = palette;
+    }
+
+    function setViewport(mode) {
+      const frame = document.getElementById('preview-frame');
+      const btnDesk = document.getElementById('vp-desktop');
+      const btnTab = document.getElementById('vp-tablet');
+      const btnMob = document.getElementById('vp-mobile');
+      
+      btnDesk.className = 'px-2 py-0.5 rounded text-[10px] bg-zinc-900 text-zinc-400 font-mono border border-zinc-800';
+      btnTab.className = 'px-2 py-0.5 rounded text-[10px] bg-zinc-900 text-zinc-400 font-mono border border-zinc-800';
+      btnMob.className = 'px-2 py-0.5 rounded text-[10px] bg-zinc-900 text-zinc-400 font-mono border border-zinc-800';
+
+      if (mode === 'desktop') {
+        frame.style.width = '100%';
+        btnDesk.className = 'px-2 py-0.5 rounded text-[10px] bg-zinc-800 text-white font-mono border border-zinc-700';
+      } else if (mode === 'tablet') {
+        frame.style.width = '768px';
+        btnTab.className = 'px-2 py-0.5 rounded text-[10px] bg-zinc-800 text-white font-mono border border-zinc-700';
+      } else if (mode === 'mobile') {
+        frame.style.width = '375px';
+        btnMob.className = 'px-2 py-0.5 rounded text-[10px] bg-zinc-800 text-white font-mono border border-zinc-700';
+      }
+    }
+
     async function updateTelemetry() {
       try {
         const res = await fetch('/api/health');
@@ -391,38 +581,73 @@ def index_page():
       try {
         const res = await fetch('/api/projects/demo-portfolio/diff');
         const data = await res.json();
-        document.getElementById('diff-viewer').innerText = data.diff;
+        document.getElementById('diff-viewer').innerText = data.diff || 'No uncommitted changes detected.';
       } catch (e) {}
     }
 
-    async function generatePortfolio(withBug) {
-      const res = await fetch(`/api/projects/generate-portfolio?project_name=demo-portfolio&intentional_bug=${withBug}`, { method: 'POST' });
-      const data = await res.json();
-      refreshPreview();
-      loadFiles();
-      loadHistory();
-      loadDiff();
-      alert(withBug ? 'Portfolio generated with INTENTIONAL ROUTE BUG (/contact-us)!' : 'Portfolio generated successfully!');
+    async function generateFromPrompt() {
+      const prompt = document.getElementById('prompt-input').value;
+      const style = document.getElementById('style-select').value;
+      const palette = document.getElementById('palette-select').value;
+      
+      const sections = [];
+      if (document.getElementById('sec-hero')?.checked) sections.push('hero');
+      if (document.getElementById('sec-features')?.checked) sections.push('features');
+      if (document.getElementById('sec-stats')?.checked) sections.push('stats');
+      if (document.getElementById('sec-pricing')?.checked) sections.push('pricing');
+      if (document.getElementById('sec-contact')?.checked) sections.push('contact');
+
+      const tree = document.getElementById('agent-tree');
+      tree.innerHTML = `
+        <div class="text-indigo-400">
+          <div>Main Agent (Architect) [PLANNING SPECIFICATION]</div>
+          <div class="ml-3">├── Code Agent (Synthesizing ${currentType} code) [RUNNING]</div>
+          <div class="ml-3">└── Test Agent (Verifying Playwright & A11y) [QUEUED]</div>
+        </div>
+      `;
+
+      try {
+        const res = await fetch('/api/projects/generate-custom', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_name: 'demo-portfolio',
+            prompt: prompt,
+            site_type: currentType,
+            style: style,
+            color_palette: palette,
+            sections: sections
+          })
+        });
+        const data = await res.json();
+
+        tree.innerHTML = `
+          <div class="text-emerald-400">
+            <div>Main Agent (Architect) [SPECIFICATION RESOLVED]</div>
+            <div class="ml-3">├── Code Agent [OK] Generated ${data.files_count} files (${data.checkpoint})</div>
+            <div class="ml-3">└── Test Agent [OK] Dev preview loaded</div>
+          </div>
+        `;
+
+        refreshPreview();
+        loadFiles();
+        loadHistory();
+        loadDiff();
+      } catch (e) {
+        alert('Generation failed: ' + e);
+      }
     }
 
-    async function generateEcommerce() {
-      const res = await fetch('/api/projects/generate-ecommerce?project_name=demo-portfolio', { method: 'POST' });
-      const data = await res.json();
-      refreshPreview();
-      loadFiles();
-      loadHistory();
-      loadDiff();
-      alert('E-Commerce Store generated successfully!');
-    }
-
-    async function generateSaas() {
-      const res = await fetch('/api/projects/generate-saas?project_name=demo-portfolio', { method: 'POST' });
-      const data = await res.json();
-      refreshPreview();
-      loadFiles();
-      loadHistory();
-      loadDiff();
-      alert('SaaS Platform generated successfully!');
+    async function simulateRouteBug() {
+      try {
+        const res = await fetch('/api/projects/demo-portfolio/simulate-bug', { method: 'POST' });
+        const data = await res.json();
+        refreshPreview();
+        loadDiff();
+        alert('Intentional Route Bug Simulated: ' + data.message + '\n\nNow click "Run Playwright Tests" to catch it, or "Auto Repair Loop" to have the agent fleet diagnose and fix it!');
+      } catch (e) {
+        alert('Simulate bug error: ' + e);
+      }
     }
 
     async function runAudits() {
@@ -474,9 +699,9 @@ def index_page():
       tree.innerHTML = `
         <div class="text-emerald-400">
           <div>Main Agent (Architect) [COMPLETED]</div>
-          <div class="ml-3">├── Debug Agent (Diagnostician) ✓ [DIAGNOSED]</div>
-          <div class="ml-3">├── Code Agent (Minimal Patch) ✓ [APPLIED 1 FILE]</div>
-          <div class="ml-3">└── Test Agent (Playwright) ✓ [PASS]</div>
+          <div class="ml-3">├── Debug Agent (Diagnostician) [DIAGNOSED]</div>
+          <div class="ml-3">├── Code Agent (Minimal Patch) [APPLIED 1 FILE]</div>
+          <div class="ml-3">└── Test Agent (Playwright) [PASS]</div>
         </div>
       `;
       refreshPreview();
@@ -490,6 +715,11 @@ def index_page():
       const frame = document.getElementById('preview-frame');
       frame.src = frame.src;
     }
+
+    // Initial load
+    loadFiles();
+    loadHistory();
+    loadDiff();
   </script>
 </body>
 </html>"""

@@ -180,6 +180,10 @@ def main():
     rep.add_argument("--name", default="demo-portfolio")
     rep.add_argument("--symptom", default="Contact button produces 404 because it points to /contact-us instead of /contact")
 
+    # download-model
+    dl = subparsers.add_parser("download-model", help="Download compatible Qwen GGUF model weights")
+    dl.add_argument("--model", choices=["qwen2.5-coder-7b-q4", "qwen2.5-coder-3b-q4", "qwen2.5-coder-1.5b-q4"], default="qwen2.5-coder-7b-q4", help="Model variant to download")
+
     # serve
     srv = subparsers.add_parser("serve", help="Launch Ornàment Web UI & API Server")
     srv.add_argument("--port", type=int, default=settings.port)
@@ -187,6 +191,10 @@ def main():
     args = parser.parse_args()
     if args.command == "telemetry":
         cmd_telemetry(args)
+    elif args.command == "download-model":
+        from ornament.models.downloader import ModelDownloader
+        path = ModelDownloader.download_model(args.model)
+        console.print(f"[bold green][OK] Model ready at: {path}[/bold green]")
     elif args.command == "generate":
         cmd_generate(args)
     elif args.command == "audit":

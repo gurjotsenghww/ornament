@@ -18,7 +18,7 @@ class PreviewServerHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         clean_path = self.path.split("?")[0].rstrip("/")
 
-        # Route matching for portfolio
+        # Route matching for portfolio and custom preview
         if clean_path == "" or clean_path == "/":
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -27,7 +27,18 @@ class PreviewServerHandler(http.server.SimpleHTTPRequestHandler):
             # Read layout and page
             navbar_file = self.workspace_root / "components" / "Navbar.tsx"
             navbar_code = navbar_file.read_text(encoding="utf-8") if navbar_file.exists() else ""
-            contact_href = "/contact-us" if 'href="/contact-us"' in navbar_code else "/contact"
+            has_route_bug = 'href="/contact-us"' in navbar_code
+            contact_href = "/contact-us" if has_route_bug else "/contact"
+
+            preview_file = self.workspace_root / "public" / "preview.html"
+            if preview_file.exists():
+                html_content = preview_file.read_text(encoding="utf-8")
+                if has_route_bug:
+                    html_content = html_content.replace('href="/contact"', 'href="/contact-us"')
+                else:
+                    html_content = html_content.replace('href="/contact-us"', 'href="/contact"')
+                self.wfile.write(html_content.encode("utf-8"))
+                return
 
             html = f"""<!DOCTYPE html>
 <html lang="en" class="dark">

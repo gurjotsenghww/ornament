@@ -28,6 +28,11 @@ class FileManager:
             raise PermissionError(f"Access Denied: Path '{rel_path}' is outside designated workspace sandbox.")
         return target
 
+    def file_exists(self, rel_path: str) -> bool:
+        """Checks if a file exists within the workspace sandbox."""
+        target = self._resolve_and_verify(rel_path)
+        return target.exists() and target.is_file()
+
     def _check_duplicate_intent(self, rel_path: str) -> Optional[str]:
         """
         Prevents redundant copy-paste clutter (HeroFinal.tsx, HeroNew.tsx).
