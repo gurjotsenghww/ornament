@@ -292,7 +292,7 @@ def train(
         "per_device_train_batch_size": config.batch_size,
         "gradient_accumulation_steps": config.gradient_accumulation_steps,
         "learning_rate": config.learning_rate,
-        "warmup_ratio": config.warmup_ratio,
+        "warmup_steps": 10,
         "max_grad_norm": config.max_grad_norm,
         "num_train_epochs": config.num_epochs,
         "optim": config.optim,
