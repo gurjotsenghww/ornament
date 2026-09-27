@@ -23,14 +23,16 @@
     "learning_rate": 0.0002,
     "warmup_ratio": 0.03,
     "max_grad_norm": 0.3,
-    "num_train_epochs": 3,
+    "num_train_epochs": 2,
     "optim": "paged_adamw_8bit",
     "fp16": true,
     "bf16": false,
-    "max_seq_length": 2048,
+    "max_seq_length": 1280,
     "logging_steps": 10,
-    "save_strategy": "epoch",
-    "estimated_vram_usage_mb": 3850
+    "save_strategy": "steps",
+    "save_steps": 20,
+    "eval_strategy": "no",
+    "estimated_vram_usage_mb": 3400
   },
   "datasets": {
     "train": "ornament/training_data/datasets/html_train.jsonl",

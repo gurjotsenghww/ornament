@@ -18,6 +18,8 @@ import time
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 def train(
     config_path: Path,
     train_dataset_path: Path,
@@ -189,12 +191,13 @@ def train(
         learning_rate=hyperparams.get("learning_rate", 2e-4),
         warmup_steps=hyperparams.get("warmup_steps", 10),
         max_grad_norm=hyperparams.get("max_grad_norm", 0.3),
-        num_train_epochs=hyperparams.get("num_train_epochs", 3),
+        num_train_epochs=hyperparams.get("num_train_epochs", 2),
         optim="paged_adamw_8bit",
         fp16=True,
         logging_steps=hyperparams.get("logging_steps", 10),
-        eval_strategy="epoch",
-        save_strategy="epoch",
+        eval_strategy="no",
+        save_strategy="steps",
+        save_steps=hyperparams.get("save_steps", 20),
         save_total_limit=2,
         report_to="none"
     )
@@ -209,7 +212,6 @@ def train(
         model=model,
         args=training_args,
         train_dataset=train_tokenized,
-        eval_dataset=val_tokenized,
         data_collator=data_collator
     )
 
