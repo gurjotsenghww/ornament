@@ -507,19 +507,9 @@ def legacy_studio_page():
     return Response(status_code=404)
 
 @app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/legacy-studio", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 def index_page(view: Optional[str] = None):
-    if view == "legacy":
-        studio_index = settings.base_dir / "frontend" / "studio" / "index.html"
-        if studio_index.exists():
-            return FileResponse(str(studio_index), media_type="text/html")
-
-    # Primary: Compiled React Studio
-    react_index = settings.base_dir / "frontend" / "studio-react" / "dist" / "index.html"
-    if react_index.exists():
-        return FileResponse(str(react_index), media_type="text/html")
-
-    # Secondary: Vanilla Studio index.html
     studio_index = settings.base_dir / "frontend" / "studio" / "index.html"
     if studio_index.exists():
         return FileResponse(str(studio_index), media_type="text/html")
