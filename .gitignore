@@ -70,6 +70,9 @@ ornament/training_data/debugging/*/*
 ornament/training_data/projects/*/*
 !ornament/training_data/projects/*/.gitkeep
 ornament/training_data/datasets/*.jsonl
+ai-website-engineer-model/datasets/*.jsonl
+ai-website-engineer-model/adapters/*/*
+!ai-website-engineer-model/adapters/.gitkeep
 ornament/training_data/storage/crawl_state.json
 ornament/training_data/processed/dedup_index.json
 ornament/training_data/rejected/*

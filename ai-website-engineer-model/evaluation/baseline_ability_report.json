@@ -1,0 +1,120 @@
+{
+  "model_name": "Qwen2.5-Coder-3B-Instruct",
+  "format": "GGUF Q4_K_M",
+  "evaluation_timestamp": "2026-09-27 11:49:49",
+  "overall_score": 91.3,
+  "results": [
+    {
+      "test_id": "design_theory",
+      "title": "Design Theory & Systems",
+      "prompt": "You are an expert website design theorist. Explain how you apply the 60-30-10 color rule and modular typographic scaling (Major Third vs Perfect Fourth) in designing an ultra-modern dark luxury portfolio website. What specific contrast ratios and spacing scales do you enforce?",
+      "response": "Designing an ultra-modern dark luxury portfolio website requires a balance of aesthetics, functionality, and user experience. The 60-30-10 color rule, which suggests that 60% of the design should be a single dominant color, 30% should be a secondary color, and 10% should be accent colors, is a foundational principle in modern web design. This rule helps in creating a cohesive and visually appealing look.\n\nIn a dark luxury portfolio website, a dominant color might be a deep, rich shade of blue or green, which symbolizes sophistication and tranquility. The secondary color could be a lighter shade of the dominant color to provide contrast and depth, while the accent colors could be used sparingly for emphasis, such as a bold red or gold.\n\nModular typographic scaling, particularly using the Major Third vs Perfect Fourth ratio, is crucial for maintaining a balanced and harmonious visual hierarchy. The Major Third ratio (1.25) is used for the base font size, while the Perfect Fourth ratio (1.5) is used for the headings and subheadings. This ratio helps in creating a sense of hierarchy and ensures that the text is readable and visually engaging.\n\nFor contrast ratios, a minimum of 4.5:1 is recommended for text on a background, and 7:1 for text on a background with a dark color. In a dark luxury portfolio, this would mean that text should be at least 16px in size to meet the 4.5:1 ratio and 24px for headings to meet the 7:1 ratio.\n\nSpacing scales are also critical for creating a sense of rhythm and balance. A 1.5:1 line height ratio is often used, which means that the line height should be 1.5 times the font size. This helps in maintaining a natural and flowing reading experience.\n\nIn summary, the 60-30-10 color rule, modular typographic scaling, and specific contrast ratios and spacing scales are essential in designing an ultra-modern dark luxury portfolio website. These principles help in creating a visually appealing, functional, and user-friendly website that resonates with the target audience.",
+      "duration_seconds": 40.68,
+      "matched_keywords": [
+        "60",
+        "30",
+        "10",
+        "ratio",
+        "contrast",
+        "4.5",
+        "spacing",
+        "scale"
+      ],
+      "keyword_coverage": 0.8,
+      "score": 90.0,
+      "rubric": {
+        "color_rule": "Explains 60% dominant background, 30% structural/cards, 10% accent/CTA",
+        "typographic_scale": "Explains modular scale multiplier (e.g. 1.25 for Major Third or 1.333 for Perfect Fourth)",
+        "contrast_ratios": "Specifies WCAG AA minimum 4.5:1 for normal text and 3:1 for large/UI components",
+        "spatial_system": "Specifies 4px or 8px grid system with consistent spacing tokens"
+      }
+    },
+    {
+      "test_id": "code_craft",
+      "title": "Modern Frontend Code Craft",
+      "prompt": "Write a semantic HTML5 and Tailwind CSS Bento-grid feature section for a SaaS product. It must include 3 cards of asymmetrical spans, modern dark glassmorphism effects (backdrop-filter, subtle borders), and accessible ARIA attributes. Provide production-ready code.",
+      "response": "Certainly! Below is a production-ready example of a semantic HTML5 and Tailwind CSS Bento-grid feature section for a SaaS product. This section includes 3 cards with asymmetrical spans, modern dark glassmorphism effects, and accessible ARIA attributes.\n\n```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>SaaS Product Features</title>\n    <link href=\"https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css\" rel=\"stylesheet\">\n    <style>\n        .feature-card {\n            @apply bg-white rounded-lg shadow-md overflow-hidden relative;\n            @apply backdrop-filter drop-shadow-lg;\n            @apply border-2 border-gray-300 dark:border-gray-600;\n            @apply hover:scale-105 transition-transform;\n        }\n\n        .feature-card:hover .feature-content {\n            @apply bg-gray-100 dark:bg-gray-800;\n        }\n\n        .feature-content {\n            @apply p-6 flex flex-col justify-center items-center;\n            @apply relative z-10;\n        }\n\n        .feature-icon {\n            @apply text-4xl text-blue-500 dark:text-blue-400;\n        }\n\n        .feature-title {\n            @apply text-xl font-bold text-gray-800 dark:text-gray-200;\n            @apply mt-2;\n        }\n\n        .feature-description {\n            @apply text-gray-600 dark:text-gray-400;\n            @apply mt-4;\n        }\n\n        .feature-button {\n            @apply bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700;\n        }\n    </style>\n</head>\n<body>\n    <section class=\"container mx-auto mt-12\">\n        <h2 class=\"text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6\">Our Features</h2>\n        <div class=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6\">\n            <div class=\"feature-card col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2\">\n                <div class=\"feature-content\">\n                    <div class=\"feature-icon\">\n                        <svg class=\"w-10 h-10\" fill=\"currentColor\" viewBox=\"0 0 24 24\">\n                            <path d=\"M12 12a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3v-3a3 3 0 0 1 3-3v-3a3 3 0 0 1-3-3zm0-6a3 3 0 0 1 3 3",
+      "duration_seconds": 54.23,
+      "matched_keywords": [
+        "<section",
+        "grid",
+        "col-span",
+        "border",
+        "rounded"
+      ],
+      "keyword_coverage": 0.71,
+      "score": 86.4,
+      "rubric": {
+        "semantic_html": "Uses <section>, <header>/<h2>, <article> or semantic cards",
+        "bento_grid": "Uses CSS Grid with asymmetrical col-span/row-span",
+        "glassmorphism": "Uses backdrop-blur, subtle transparent border, semi-transparent dark bg",
+        "accessibility": "Includes aria-labelledby or aria-describedby or semantic headings"
+      }
+    },
+    {
+      "test_id": "minimal_change_diagnosis",
+      "title": "Bug Diagnosis & Minimal Change Policy",
+      "prompt": "You are an autonomous website engineer in the Orn\u00e0ment system. You MUST adhere strictly to the Minimal Change Policy: Never rewrite working code, provide ONLY the minimal fix lines.\n\nGiven this broken code:\n```html\n<nav class=\"flex items-center justify-between p-4 bg-zinc-900\">\n  <a href=\"/\" class=\"font-bold text-white\">Brand</a>\n  <div class=\"space-x-4\">\n    <a href=\"/about\" class=\"text-zinc-400\">About</a>\n    <a href=\"/pricing\" class=\"text-zinc-400\">Pricing</a>\n    <a href=\"/contact-us\" class=\"text-zinc-400\">Contact</a>\n  </div>\n</nav>\n```\nProblem: The router only serves '/contact', but the link points to '/contact-us', triggering a 404 error.\nRequirement:\n1. State the root cause in 1 concise sentence.\n2. Provide ONLY the exact line replacement (do NOT output the entire file).",
+      "response": "### Root Cause:\nThe issue arises because the `href` attribute of the \"Contact\" link points to `/contact-us`, which is not a valid route on the server.\n\n### Line Replacement:\n```html\n<a href=\"/contact\" class=\"text-zinc-400\">Contact</a>\n```",
+      "duration_seconds": 11.46,
+      "matched_keywords": [
+        "contact",
+        "replace",
+        "href"
+      ],
+      "keyword_coverage": 0.75,
+      "score": 80.0,
+      "rubric": {
+        "root_cause": "Accurately identifies the route mismatch between /contact-us and /contact",
+        "minimal_patch": "Only replaces the single broken line without rewriting the entire navbar",
+        "clarity": "Concise and strictly follows instructions"
+      }
+    },
+    {
+      "test_id": "aesthetic_taste",
+      "title": "Design Taste & Component Elevation",
+      "prompt": "Critique this generic button:\n`<button style=\"background: blue; color: white; padding: 10px 20px; border-radius: 5px;\">Click Here</button>`\nHow would you transform it into an award-winning, ultra-premium button for a high-end AI product? Provide the critique and the refined Tailwind CSS code with micro-interactions, gradients, and depth.",
+      "response": "To transform the generic button into an award-winning, ultra-premium button for a high-end AI product, we need to focus on enhancing its visual appeal, interactivity, and depth. Here's a critique and the refined Tailwind CSS code with micro-interactions, gradients, and depth:\n\n### Critique of the Original Button\n1. **Color Scheme**: The original button uses a simple blue and white color scheme, which is straightforward but lacks depth and sophistication.\n2. **Typography**: The text \"Click Here\" is too generic and lacks a distinctive style that aligns with the high-end product.\n3. **Design Elements**: The button lacks any gradients or depth, which can make it feel flat and unengaging.\n4. **Micro-Interactions**: The button lacks any hover effects or animations that enhance user experience.\n\n### Refined Tailwind CSS Code with Micro-Interactions, Gradients, and Depth\n```html\n<button class=\"bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out\">\n    Click Here\n</button>\n```\n\n### Explanation of the Changes\n1. **Gradient**: The button now uses a gradient from blue-500 to blue-700, creating a smooth transition and depth effect.\n2. **Text Color**: The text color is kept white to maintain contrast with the gradient.\n3. **Font**: The font is set to bold and the size is increased to 16px for a more premium look.\n4. **Padding and Border Radius**: The padding is increased to 30px, and the border radius is set to 60px to give a more rounded and elevated appearance.\n5. **Shadow**: The button has a shadow effect on hover, enhancing the visual hierarchy and making it stand out.\n6. **Focus Effects**: The focus effects include a ring and a shadow, providing a tactile and engaging experience.\n7. **Transition**: The transition effect adds a smooth animation to the button's hover and focus states, making the interaction more intuitive.\n\nThis refined button will not only look more premium but also provide a better user experience, making it a standout feature for a high-end AI product.",
+      "duration_seconds": 47.5,
+      "matched_keywords": [
+        "hover",
+        "transition",
+        "focus",
+        "gradient",
+        "shadow",
+        "ring",
+        "state"
+      ],
+      "keyword_coverage": 1.0,
+      "score": 100.0,
+      "rubric": {
+        "critique_quality": "Identifies lack of hover/focus states, harsh saturated blue, inline styles, lack of depth",
+        "aesthetic_elevation": "Adds subtle gradient, border glow or layered shadow, active press feedback, focus ring",
+        "typography_craft": "Improves font weight, letter spacing (tracking), or text styling"
+      }
+    },
+    {
+      "test_id": "modern_css_features",
+      "title": "Modern CSS Architecture",
+      "prompt": "Demonstrate three modern CSS capabilities:\n1. Fluid typography using clamp()\n2. A CSS custom property token system for dark/light mode\n3. A CSS container query (@container) example\nBriefly explain why container queries are superior to media queries for modular UI components.",
+      "response": "### 1. Fluid Typography using `clamp()`\n\nThe `clamp()` function in CSS is a powerful tool for creating responsive typography that adapts to different screen sizes. It allows you to define a minimum, maximum, and a preferred value for a property, ensuring that the text size is neither too small nor too large.\n\n**Example:**\n\n```css\nbody {\n  font-size: clamp(1rem, 1.2rem + 0.2vw, 1.5rem);\n}\n```\n\n- **Minimum Value:** The text size is set to 1rem by default.\n- **Preferred Value:** The text size is set to 1.2rem plus 0.2vw, which adjusts based on the viewport width.\n- **Maximum Value:** The text size is capped at 1.5rem.\n\nThis approach ensures that the text size remains readable across a wide range of devices, from small mobile screens to large desktops.\n\n### 2. CSS Custom Property Token System for Dark/Light Mode\n\nCSS custom properties (also known as CSS variables) allow you to define reusable values that can be easily modified throughout your stylesheet. This is particularly useful for implementing dark/light mode.\n\n**Example:**\n\n```css\n:root {\n  --primary-color: #007bff;\n  --secondary-color: #6c757d;\n  --background-color: #f8f9fa;\n  --text-color: #333;\n  --dark-mode: false;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --primary-color: #212121;\n    --secondary-color: #6c6c6c;\n    --background-color: #343a40;\n    --text-color: #fff;\n    --dark-mode: true;\n  }\n}\n```\n\n- **Variables:** Define common colors and a dark mode toggle.\n- **Media Query:** Conditionally apply dark mode styles based on the user's preference.\n\nThis system makes it easy to switch between themes and ensures consistency across your application.\n\n### 3. CSS Container Query Example\n\nContainer queries allow you to create responsive layouts by defining breakpoints based on the size of the container itself, rather than the viewport. This is particularly useful for modular UI components that need to adapt to different screen sizes.\n\n**Example:**\n\n```css\n@container (max-width: 600px) {\n  .container {\n    width: 100%;\n    padding: 1rem;\n  }\n}\n\n@container (max-width: 1200px) {\n  .container {\n    width: 80%;\n    padding: 1.5rem;\n  }\n}\n\n@container (max-width: 1800px) {\n  .container {\n    width: 60%;\n    padding: 2rem;\n  }\n}\n```\n\n- **Container Queries:** Define breakpoints based on the container's width.\n- **Responsive Layout:** Adjust the layout properties (e.g., width, padding) based on the container size.\n\n**Why Container Queries are Superior to Media Queries for Modular UI Components:**\n\n1.",
+      "duration_seconds": 61.99,
+      "matched_keywords": [
+        "clamp",
+        "container",
+        "@container",
+        "--",
+        ":root",
+        "modular"
+      ],
+      "keyword_coverage": 1.0,
+      "score": 100.0,
+      "rubric": {
+        "clamp_syntax": "Correctly formats clamp(min, preferred, max)",
+        "custom_properties": "Defines CSS variables on :root and dark selector/media",
+        "container_queries": "Uses container-type and @container query",
+        "architectural_reasoning": "Explains component modularity based on parent container width rather than viewport"
+      }
+    }
+  ]
+}
