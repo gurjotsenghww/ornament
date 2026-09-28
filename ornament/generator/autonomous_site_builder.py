@@ -247,6 +247,21 @@ class AutonomousSiteBuilder:
         return f"Component source file for {file_name}."
 
     @classmethod
+    def get_cloud_url(cls) -> Optional[str]:
+        """
+        Returns the active Cloud GPU tunnel URL (e.g. Google Colab Tesla T4) if configured.
+        """
+        try:
+            cloud_file = settings.workspace_dir.parent / ".ornament" / "cloud_url.txt"
+            if cloud_file.exists():
+                url = cloud_file.read_text(encoding="utf-8").strip()
+                if url.startswith("http"):
+                    return url
+        except Exception:
+            pass
+        return None
+
+    @classmethod
     def query_qwen_for_code(
         cls,
         prompt: str,
@@ -255,11 +270,53 @@ class AutonomousSiteBuilder:
         fast_mode: bool = False
     ) -> Optional[Dict[str, Any]]:
         """
-        Queries local Qwen2.5-Coder-3B to generate complete, tailored HTML, CSS, JS code
-        specifically matching the user's requirements (e.g. form, calculator, landing page, app).
+        Queries Qwen (Cloud 7B on Colab Tesla T4 or local 3B model) to generate complete,
+        tailored HTML, CSS, JS code specifically matching user requirements.
         Supports incremental modification of existing codebase if existing_files is provided.
-        Supports fast_mode (greedy sampling, concise output) for Ornà 2.5 (Instant).
         """
+        # 1. First priority: Check if Google Colab Cloud Engine (Tesla T4 with 7B Coder) is connected
+        cloud_url = cls.get_cloud_url()
+        if cloud_url:
+            try:
+                import urllib.request
+                import json
+                existing_map = {}
+                if existing_files:
+                    for ef in existing_files:
+                        fn = ef.get("name") or ef.get("id")
+                        fc = ef.get("content")
+                        if fn and fc:
+                            existing_map[fn] = fc
+
+                payload = {
+                    "prompt": prompt,
+                    "existing_files": existing_map if existing_map else None,
+                    "fast_mode": fast_mode
+                }
+                req = urllib.request.Request(
+                    f"{cloud_url}/api/generate-site",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=90) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        if data.get("success") and data.get("files"):
+                            fmap = {f["name"]: f["content"] for f in data["files"]}
+                            raw_t = data.get("raw_text", "")
+                            expl = f"Synthesized with Flagship Ornà 2.5 Coder 7B (powered by Google Colab Tesla T4 in {data.get('elapsed_seconds')}s)"
+                            return {
+                                "html": fmap.get("index.html"),
+                                "css": fmap.get("style.css"),
+                                "js": fmap.get("app.js") or fmap.get("script.js"),
+                                "explanation": expl,
+                                "raw_text": raw_t,
+                                "all_files": fmap
+                            }
+            except Exception as e:
+                print(f"[*] Cloud model check/call failed ({e}), falling back to local neural model.")
+
+        # 2. Local neural model fallback
         llm = cls.get_qwen_model()
         if not llm:
             return None
@@ -483,22 +540,65 @@ class AutonomousSiteBuilder:
         # Incorporate attachments context if provided
         attachment_notes = ""
         attachment_text = ""
+        image_attachment = None
         if attachments:
             for att in attachments:
-                if att.get("type") == "text" and att.get("content"):
+                if att.get("type") == "image" and (att.get("data") or att.get("content")):
+                    image_attachment = att.get("data") or att.get("content")
+                elif att.get("type") == "text" and att.get("content"):
                     c = att.get("content")[:120]
                     attachment_notes += f"\n<!-- Attached context: {c} -->"
                     attachment_text += f"{c}\n"
 
-        # Query Qwen for ACTUAL code for BOTH models:
-        # Instant model uses fast_mode=True (greedy sampling, max_tokens=450)
-        # Coder model uses fast_mode=False (comprehensive synthesis, max_tokens=950)
-        qwen_code_result = cls.query_qwen_for_code(
-            prompt,
-            attachment_text,
-            existing_files=existing_files,
-            fast_mode=is_instant
-        )
+        # Check if an image was provided and Cloud Vision Engine is available
+        cloud_url = cls.get_cloud_url()
+        if image_attachment and cloud_url:
+            try:
+                import urllib.request
+                import json
+                existing_map = {}
+                if existing_files:
+                    for ef in existing_files:
+                        fn = ef.get("name") or ef.get("id")
+                        fc = ef.get("content")
+                        if fn and fc:
+                            existing_map[fn] = fc
+
+                payload = {
+                    "image_base64": image_attachment,
+                    "prompt": prompt,
+                    "existing_files": existing_map if existing_map else None
+                }
+                req = urllib.request.Request(
+                    f"{cloud_url}/api/vision-to-site",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    if resp.status == 200:
+                        v_data = json.loads(resp.read().decode("utf-8"))
+                        if v_data.get("success") and v_data.get("files"):
+                            fmap = {f["name"]: f["content"] for f in v_data["files"]}
+                            expl = f"Analyzed design image with Qwen2-VL and synthesized complete project using Ornà 2.5 Coder 7B (Tesla T4 GPU in {v_data.get('elapsed_seconds')}s).\n\n**Visual Insights**:\n{v_data.get('analysis', '')[:400]}..."
+                            qwen_code_result = {
+                                "html": fmap.get("index.html"),
+                                "css": fmap.get("style.css"),
+                                "js": fmap.get("app.js") or fmap.get("script.js"),
+                                "explanation": expl,
+                                "raw_text": v_data.get("analysis", ""),
+                                "all_files": fmap
+                            }
+            except Exception as e:
+                print(f"[*] Cloud vision call failed ({e}), continuing with text synthesis.")
+
+        # Query Qwen for ACTUAL code if vision didn't already produce it:
+        if not qwen_code_result:
+            qwen_code_result = cls.query_qwen_for_code(
+                prompt,
+                attachment_text,
+                existing_files=existing_files,
+                fast_mode=is_instant
+            )
 
         # Sanitize project slug
         if not project_name:

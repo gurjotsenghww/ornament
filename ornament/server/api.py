@@ -229,27 +229,73 @@ class GenerateSiteRequest(BaseModel):
     attachments: Optional[List[GenerateSiteAttachment]] = None
     model: Optional[str] = "qwen"
     existing_files: Optional[List[Dict[str, Any]]] = None
-
 @app.get("/api/models")
-def list_available_models():
+def get_available_models():
+    from ornament.generator.autonomous_site_builder import AutonomousSiteBuilder
     weights = settings.base_dir / "ai-website-engineer-model" / "weights" / "qwen2.5-coder-3b-instruct-q4_k_m.gguf"
     qwen_ready = weights.exists()
-    return [
+    cloud_url = AutonomousSiteBuilder.get_cloud_url()
+    models = [
         {
             "id": "qwen",
-            "name": "Orn\u00e0 2.5 Coder (Neural 3B)",
+            "name": "Ornà 2.5 Coder (Neural 3B)",
             "description": "Local GGUF neural model running on CPU, synthesizing bespoke architecture & copy",
             "ready": qwen_ready,
-            "default": True
+            "default": not bool(cloud_url)
         },
         {
             "id": "instant",
-            "name": "Orn\u00e0 2.5 (Instant)",
-            "description": "Fast deterministic synthesis engine with 60-30-10 color harmonization",
+            "name": "Ornà 2.5 (Instant)",
+            "description": "Fast synthesis engine with greedy decoding",
             "ready": True,
             "default": False
         }
     ]
+    if cloud_url:
+        models.insert(0, {
+            "id": "cloud-7b",
+            "name": "Ornà 2.5 Coder (Cloud 7B)",
+            "description": "Flagship 7B Coder + Qwen2-VL Vision on Google Colab Tesla T4 GPU",
+            "ready": True,
+            "default": True
+        })
+    return models
+
+@app.get("/api/cloud-status")
+def get_cloud_status():
+    from ornament.generator.autonomous_site_builder import AutonomousSiteBuilder
+    url = AutonomousSiteBuilder.get_cloud_url()
+    if not url:
+        return {"connected": False, "message": "No cloud engine configured."}
+    try:
+        import urllib.request
+        import json
+        req = urllib.request.Request(f"{url}/health", headers={"User-Agent": "Ornàment-Client"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                return {
+                    "connected": True,
+                    "url": url,
+                    "gpu": data.get("gpu"),
+                    "vram_used_gb": data.get("vram_used_gb"),
+                    "vram_total_gb": data.get("vram_total_gb"),
+                    "coder_model": data.get("coder_model"),
+                    "vision_model": data.get("vision_model")
+                }
+    except Exception as e:
+        return {"connected": False, "url": url, "error": str(e)}
+    return {"connected": False, "url": url}
+
+class SetCloudUrlRequest(BaseModel):
+    url: str
+
+@app.post("/api/set-cloud-url")
+def set_cloud_url(req: SetCloudUrlRequest):
+    cloud_file = settings.workspace_dir.parent / ".ornament" / "cloud_url.txt"
+    cloud_file.parent.mkdir(parents=True, exist_ok=True)
+    cloud_file.write_text(req.url.strip(), encoding="utf-8")
+    return {"status": "success", "url": req.url.strip()}
 
 @app.post("/api/generate-site")
 async def generate_site_endpoint(req: GenerateSiteRequest):

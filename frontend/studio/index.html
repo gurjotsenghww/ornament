@@ -1587,6 +1587,22 @@
                     </div>
                 </div>
 
+                <!-- CLOUD GPU SECTION -->
+                <div style="margin-top:20px;padding:14px;background:#f9fafb;border-radius:12px;border:1px solid #e5e7eb;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <label style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.5px;text-transform:uppercase;">Cloud Engine (Google Colab)</label>
+                        <span id="cloudStatusBadge" style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:#dcfce7;color:#15803d;">Connected · Tesla T4</span>
+                    </div>
+                    <div style="font-size:12px;color:#374151;line-height:1.4;">
+                        <strong>Models:</strong> Qwen 2.5 Coder 7B + Qwen2-VL 2B Vision<br>
+                        <strong>Cloud VRAM:</strong> <span id="cloudVramText">6.97 GB / 14.56 GB (Tesla T4)</span>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:10px;">
+                        <input id="cloudUrlInput" type="text" value="https://forms-parents-certain-penetration.trycloudflare.com" placeholder="https://xxx.trycloudflare.com" style="flex:1;font-size:12px;padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-family:monospace;">
+                        <button id="saveCloudUrlBtn" type="button" style="padding:6px 12px;background:#111;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Update</button>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Footer -->
@@ -1687,10 +1703,23 @@
                             <span id="selectedModelLabel">Ornà 2.5 Coder</span>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                         </button>
-                        <div id="modelMenuPopover" style="display:none; position:absolute; bottom:calc(100% + 10px); right:48px; background:rgba(24, 24, 28, 0.96); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255, 255, 255, 0.12); border-radius:14px; padding:6px; box-shadow:0 16px 36px rgba(0,0,0,0.5); z-index:1000; min-width:240px;">
-                            <div class="model-opt active" data-model="qwen" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;cursor:pointer;color:#fff;font-size:13px;font-weight:500;background:rgba(255,255,255,0.08);">
-                                <span>Ornà 2.5 Coder (Neural 3B)</span>
-                                <span class="model-check" style="color:#6366f1;font-weight:bold;">✓</span>
+                        <div id="modelMenuPopover" style="display:none; position:absolute; bottom:calc(100% + 10px); right:48px; background:rgba(24, 24, 28, 0.96); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255, 255, 255, 0.12); border-radius:14px; padding:6px; box-shadow:0 16px 36px rgba(0,0,0,0.5); z-index:1000; min-width:260px;">
+                            <div class="model-opt active" data-model="cloud-7b" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;cursor:pointer;color:#fff;font-size:13px;font-weight:500;background:rgba(255,255,255,0.08);">
+                                <div>
+                                    <div style="color:#c4b5fd;font-weight:700;display:flex;align-items:center;gap:6px;">
+                                        <span>Ornà 2.5 Coder (Cloud 7B)</span>
+                                        <span style="font-size:9px;background:#7c3aed;color:#fff;padding:1px 5px;border-radius:6px;font-weight:700;">T4 GPU</span>
+                                    </div>
+                                    <div style="font-size:11px;color:#8e8e9f;margin-top:1px;">Flagship 7B Coder + Qwen2-VL Vision</div>
+                                </div>
+                                <span class="model-check" style="color:#c4b5fd;font-weight:bold;">✓</span>
+                            </div>
+                            <div class="model-opt" data-model="qwen" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;cursor:pointer;color:#8e8e9f;font-size:13px;font-weight:500;">
+                                <div>
+                                    <div style="color:#e4e4e7;font-weight:600;">Ornà 2.5 Coder (Neural 3B)</div>
+                                    <div style="font-size:11px;color:#71717a;margin-top:1px;">Local neural model on CPU</div>
+                                </div>
+                                <span class="model-check" style="color:#6366f1;font-weight:bold;display:none;">✓</span>
                             </div>
                             <div class="model-opt" data-model="instant" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;cursor:pointer;color:#8e8e9f;font-size:13px;font-weight:500;">
                                 <div>
@@ -2051,7 +2080,60 @@
         if (!settingsModal) return;
         renderFontDropdown(currentFontId);
         renderThemeDropdown(currentThemeId);
+        checkCloudStatus();
         settingsModal.style.display = 'flex';
+    }
+
+    const cloudStatusBadge = document.getElementById('cloudStatusBadge');
+    const cloudVramText = document.getElementById('cloudVramText');
+    const cloudUrlInput = document.getElementById('cloudUrlInput');
+    const saveCloudUrlBtn = document.getElementById('saveCloudUrlBtn');
+
+    async function checkCloudStatus() {
+        try {
+            const res = await fetch('/api/cloud-status');
+            const data = await res.json();
+            if (data.connected) {
+                if (cloudStatusBadge) {
+                    cloudStatusBadge.textContent = `Connected · ${data.gpu || 'Tesla T4'}`;
+                    cloudStatusBadge.style.background = '#dcfce7';
+                    cloudStatusBadge.style.color = '#15803d';
+                }
+                if (cloudVramText) {
+                    cloudVramText.textContent = `${data.vram_used_gb} GB / ${data.vram_total_gb} GB (${data.gpu})`;
+                }
+                if (cloudUrlInput && data.url) {
+                    cloudUrlInput.value = data.url;
+                }
+            } else {
+                if (cloudStatusBadge) {
+                    cloudStatusBadge.textContent = 'Disconnected';
+                    cloudStatusBadge.style.background = '#fee2e2';
+                    cloudStatusBadge.style.color = '#991b1b';
+                }
+            }
+        } catch (e) {}
+    }
+
+    if (saveCloudUrlBtn && cloudUrlInput) {
+        saveCloudUrlBtn.addEventListener('click', async () => {
+            const val = cloudUrlInput.value.trim();
+            if (!val) return;
+            saveCloudUrlBtn.textContent = 'Saving...';
+            try {
+                await fetch('/api/set-cloud-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: val })
+                });
+                showToast('Cloud GPU URL updated!');
+                checkCloudStatus();
+            } catch (e) {
+                showToast('Failed to update Cloud URL');
+            } finally {
+                saveCloudUrlBtn.textContent = 'Update';
+            }
+        });
     }
 
     function closeSettingsModal() {
@@ -2987,7 +3069,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
     }
 
     /* ============ AI SYNTHESIS & MODEL ROUTING ============ */
-    let currentSelectedModel = 'qwen';
+    let currentSelectedModel = 'cloud-7b';
     const modelSelectorBtn = document.getElementById('modelSelectorBtn');
     const modelMenuPopover = document.getElementById('modelMenuPopover');
     const selectedModelLabel = document.getElementById('selectedModelLabel');
@@ -3013,7 +3095,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                     o.style.color = o === opt ? '#fff' : '#8e8e9f';
                 });
                 if (selectedModelLabel) {
-                    selectedModelLabel.textContent = currentSelectedModel === 'qwen' ? 'Orn\u00e0 2.5 Coder' : 'Orn\u00e0 2.5 (Instant)';
+                    selectedModelLabel.textContent = currentSelectedModel === 'instant' ? 'Orn\u00e0 2.5 (Instant)' : 'Orn\u00e0 2.5 Coder';
                 }
                 modelMenuPopover.style.display = 'none';
             });
@@ -3442,12 +3524,14 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
             const nameEl = card.querySelector('.attachment-name');
             const sizeEl = card.querySelector('.attachment-size');
             const imgEl = card.querySelector('.attachment-thumb');
+            const dataUrl = imgEl ? (imgEl.src || (card._previewData ? card._previewData.url : '')) : '';
             attachmentsData.push({
                 type: imgEl ? 'image' : 'doc',
                 name: nameEl ? nameEl.textContent : 'attachment',
                 size: sizeEl ? sizeEl.textContent : '',
                 content: card._fileContent || '',
-                url: imgEl ? imgEl.src : ''
+                url: dataUrl,
+                data: dataUrl
             });
         });
 
@@ -3489,7 +3573,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
             requestModelChatTitle(currentChatId, text);
         }
 
-        const currentFlow = currentSelectedModel === 'qwen' ? buildQwenFlow(text) : buildInstantFlow(text);
+        const currentFlow = currentSelectedModel === 'instant' ? buildInstantFlow(text) : buildQwenFlow(text);
         if (hasAttachments || isCodingTask(text)) {
             showAssistantActivityFlow(currentFlow, text, attachmentsData);
         } else {
