@@ -704,7 +704,7 @@
         position: absolute; inset: -3px;
         border-radius: 50%;
         border: 2px solid transparent;
-        border-top-color: #6366f1;
+        border-top-color: #a78bfa;
         animation: activitySpin 0.9s linear infinite;
     }
     @keyframes activitySpin { to { transform: rotate(360deg); } }
@@ -732,9 +732,23 @@
     .activity-item[data-state="active"] .activity-progress-wrap { display: block; }
     .activity-progress-bar {
         height: 100%; border-radius: 3px;
-        background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        background: linear-gradient(90deg, #a78bfa, #c4b5fd, #ddd6fe);
         width: 0%;
-        transition: width 0.4s ease;
+        transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    .activity-progress-bar::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%);
+        animation: barShimmer 1.8s ease-in-out infinite;
+        transform: translateX(-100%);
+    }
+    @keyframes barShimmer {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(200%); }
     }
 
     .activity-item::before {
@@ -745,7 +759,7 @@
     }
     .activity-item:last-child::before { display: none; }
     .activity-item[data-state="done"]::before { background: #22c55e; }
-    .activity-item[data-state="active"]::before { background: linear-gradient(to bottom, #6366f1, #e4e4e7); }
+    .activity-item[data-state="active"]::before { background: linear-gradient(to bottom, #a78bfa, #e4e4e7); }
 
     /* ================= CODE EXPLORER (Preview / Code result) ================= */
     .chat-bubble.code-explorer-bubble {
@@ -1326,6 +1340,66 @@
         .prompt-box { padding: 12px 14px; }
         .dropdown-btn { padding: 7px 10px; font-size: 12px; }
     }
+
+    /* ================= SEARCH MODAL ================= */
+    .search-modal {
+        display: none; position: fixed; inset: 0; z-index: 9500;
+        background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+        align-items: flex-start; justify-content: center;
+        padding-top: 100px;
+    }
+    .search-modal.open { display: flex; }
+    .search-modal-box {
+        background: #fff; border-radius: 16px; width: 100%; max-width: 580px;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+        overflow: hidden; margin: 0 20px;
+    }
+    .search-modal-input-row {
+        display: flex; align-items: center; gap: 12px;
+        padding: 16px 20px; border-bottom: 1px solid #f0f0f0;
+    }
+    .search-modal-input-row svg { width: 20px; height: 20px; color: #9ca3af; flex-shrink: 0; }
+    .search-modal-input-row input {
+        flex: 1; border: none; outline: none; font-size: 16px; color: #111;
+        font-family: inherit; background: transparent;
+    }
+    .search-modal-input-row input::placeholder { color: #9ca3af; }
+    .search-modal-results { max-height: 360px; overflow-y: auto; }
+    .search-result-item {
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 20px; cursor: pointer;
+        transition: background 0.1s;
+    }
+    .search-result-item:hover { background: #f9fafb; }
+    .search-result-item svg { width: 16px; height: 16px; stroke: #9ca3af; fill: none; flex-shrink: 0; }
+    .search-result-item .sr-title { font-size: 14px; font-weight: 500; color: #111; }
+    .search-result-item .sr-sub { font-size: 12px; color: #9ca3af; margin-top: 1px; }
+    .search-empty { padding: 32px 20px; text-align: center; color: #9ca3af; font-size: 14px; }
+    .search-section-label { padding: 8px 20px 4px; font-size: 11px; font-weight: 700; color: #9ca3af; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* ================= NOTIFICATION PANEL ================= */
+    .notif-panel {
+        position: fixed; top: 72px; right: 120px; z-index: 8000;
+        background: #fff; border: 1px solid #f0f0f0;
+        border-radius: 16px; width: 320px;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.14);
+        display: none; flex-direction: column; overflow: hidden;
+    }
+    .notif-panel.open { display: flex; }
+    .notif-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 16px; border-bottom: 1px solid #f0f0f0;
+    }
+    .notif-header span { font-size: 14px; font-weight: 700; color: #111; }
+    .notif-header button { background: transparent; border: none; cursor: pointer; font-size: 12px; color: #9ca3af; }
+    .notif-item {
+        display: flex; align-items: flex-start; gap: 12px;
+        padding: 12px 16px; border-bottom: 1px solid #f9fafb;
+    }
+    .notif-dot-status { width: 8px; height: 8px; border-radius: 50%; background: #a78bfa; margin-top: 5px; flex-shrink: 0; }
+    .notif-item-body .notif-title { font-size: 13px; font-weight: 600; color: #111; }
+    .notif-item-body .notif-sub { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+    .notif-empty { padding: 32px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -1427,28 +1501,72 @@
 
     <!-- ============ SETTINGS MODAL ============ -->
     <div id="settingsModal" style="display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,0.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center;">
-        <div style="background:#fff; border-radius:20px; padding:28px 24px; width:100%; max-width:540px; box-shadow:0 24px 60px rgba(0,0,0,0.2); position:relative; margin:20px; max-height:90vh; display:flex; flex-direction:column; box-sizing:border-box;">
-            <button id="settingsModalClose" style="position:absolute;top:16px;right:16px;background:transparent;border:none;cursor:pointer;color:#888;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" aria-label="Close">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-                <div style="width:32px;height:32px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <div style="background:#fff; border-radius:20px; padding:0; width:100%; max-width:520px; box-shadow:0 24px 60px rgba(0,0,0,0.2); position:relative; margin:20px; max-height:90vh; display:flex; flex-direction:column; box-sizing:border-box; overflow:hidden;">
+            <!-- Header -->
+            <div style="padding:24px 24px 0; flex-shrink:0;">
+                <button id="settingsModalClose" style="position:absolute;top:16px;right:16px;background:transparent;border:none;cursor:pointer;color:#888;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" aria-label="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                    <div style="width:32px;height:32px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </div>
+                    <h2 style="font-size:18px;font-weight:700;letter-spacing:-0.3px;margin:0;">Settings</h2>
                 </div>
-                <h2 style="font-size:18px;font-weight:700;letter-spacing:-0.3px;margin:0;">Settings</h2>
-            </div>
-            <p style="font-size:13px;color:#71717a;margin:0 0 18px;">Personalize typography and interface styling across your studio workspace.</p>
-
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <label style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.5px;text-transform:uppercase;">Typography / Font Family</label>
-                <span id="currentFontBadge" style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:#eef2ff;color:#4f46e5;">JetBrains Mono</span>
+                <p style="font-size:13px;color:#71717a;margin:0 0 20px;">Personalize typography, themes, and interface styling.</p>
             </div>
 
-            <div id="fontOptionsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:10px;overflow-y:auto;max-height:360px;padding-right:2px;margin-bottom:18px;">
-                <!-- Populated dynamically via JS -->
+            <!-- Scrollable body -->
+            <div style="overflow-y:auto;flex:1;padding:0 24px 24px;">
+
+                <!-- FONT SECTION -->
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <label style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.5px;text-transform:uppercase;">Font Family</label>
+                        <span id="currentFontBadge" style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:#ede9fe;color:#7c3aed;">JetBrains Mono</span>
+                    </div>
+                    <!-- Font dropdown trigger -->
+                    <div id="fontDropdownTrigger" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;background:#fafafa;transition:border-color 0.15s;user-select:none;" onclick="document.getElementById('fontDropdownMenu').classList.toggle('open')">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span id="fontDropdownSelected" style="font-size:14px;font-weight:600;color:#111;">JetBrains Mono</span>
+                            <span id="fontDropdownCategory" style="font-size:11px;color:#9ca3af;">Monospace (Default)</span>
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <!-- Font dropdown menu -->
+                    <div id="fontDropdownMenu" style="display:none;border:1.5px solid #e5e7eb;border-radius:10px;margin-top:4px;overflow:hidden;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+                        <div id="fontDropdownItems">
+                            <!-- populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BG THEME SECTION -->
+                <div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <label style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.5px;text-transform:uppercase;">Background Theme</label>
+                        <span id="currentThemeBadge" style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:#f0fdf4;color:#16a34a;">Mountain Mist</span>
+                    </div>
+                    <!-- Theme dropdown trigger -->
+                    <div id="themeDropdownTrigger" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;background:#fafafa;transition:border-color 0.15s;user-select:none;" onclick="document.getElementById('themeDropdownMenu').classList.toggle('open')">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div id="themeDropdownPreview" style="width:28px;height:20px;border-radius:4px;background:#c9d6e3;background-size:cover;background-position:center;border:1px solid #e5e7eb;"></div>
+                            <span id="themeDropdownSelected" style="font-size:14px;font-weight:600;color:#111;">Mountain Mist</span>
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <!-- Theme dropdown menu -->
+                    <div id="themeDropdownMenu" style="display:none;border:1.5px solid #e5e7eb;border-radius:10px;margin-top:4px;overflow:hidden;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+                        <div id="themeDropdownItems">
+                            <!-- populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #f1f5f9;">
+            <!-- Footer -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-top:1px solid #f1f5f9;flex-shrink:0;">
                 <button id="resetFontBtn" type="button" style="font-size:13px;color:#6b7280;background:transparent;border:none;cursor:pointer;font-weight:500;padding:6px 10px;border-radius:6px;transition:background 0.15s;">
                     Reset to Default
                 </button>
@@ -1459,6 +1577,7 @@
         </div>
     </div>
 
+
     <!-- ============ MAIN ============ -->
     <main class="main">
         <header class="top-header">
@@ -1466,15 +1585,16 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
 
-            <div class="search-bar">
+            <div class="search-bar" id="globalSearchBar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" placeholder="Search anything...">
+                <input type="text" id="globalSearchInput" placeholder="Search chats, commands..." autocomplete="off">
                 <span class="shortcut">⌘ K</span>
             </div>
 
             <div class="header-actions">
-                <button class="action-btn" aria-label="Notifications">
+                <button class="action-btn" aria-label="Notifications" id="notifBtn" style="position:relative;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span id="notifDot" style="position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:#ef4444;border:1.5px solid rgba(255,255,255,0.8);display:none;"></span>
                 </button>
                 <button class="action-btn" aria-label="Account">K</button>
                 <button class="action-btn" aria-label="Theme">
@@ -1520,7 +1640,10 @@
                                 <span class="model-check" style="color:#6366f1;font-weight:bold;">✓</span>
                             </div>
                             <div class="model-opt" data-model="instant" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;cursor:pointer;color:#8e8e9f;font-size:13px;font-weight:500;">
-                                <span>Instant Synthesizer</span>
+                                <div>
+                                    <div style="color:#8e8e9f;font-weight:600;">Ornà 2.5 (Instant)</div>
+                                    <div style="font-size:11px;color:#555566;margin-top:1px;">Fast synthesis · lower latency</div>
+                                </div>
                                 <span class="model-check" style="color:#6366f1;font-weight:bold;display:none;">✓</span>
                             </div>
                         </div>
@@ -1549,6 +1672,41 @@
                 </button>
             </div>
             <div class="preview-body" id="previewBody"></div>
+        </div>
+    </div>
+
+    <!-- ============ SEARCH MODAL ============ -->
+    <div class="search-modal" id="searchModal">
+        <div class="search-modal-box">
+            <div class="search-modal-input-row">
+                <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input id="searchModalInput" type="text" placeholder="Search chats, commands..." autocomplete="off">
+            </div>
+            <div id="searchModalResults" class="search-modal-results"></div>
+        </div>
+    </div>
+
+    <!-- ============ NOTIFICATION PANEL ============ -->
+    <div class="notif-panel" id="notifPanel">
+        <div class="notif-header">
+            <span>Notifications</span>
+            <button id="markAllReadBtn">Mark all read</button>
+        </div>
+        <div id="notifList">
+            <div class="notif-item">
+                <div class="notif-dot-status"></div>
+                <div class="notif-item-body">
+                    <div class="notif-title">Welcome to Ornàment</div>
+                    <div class="notif-sub">Start creating your first website with AI synthesis.</div>
+                </div>
+            </div>
+            <div class="notif-item">
+                <div class="notif-dot-status"></div>
+                <div class="notif-item-body">
+                    <div class="notif-title">Ornà 2.5 (Instant) is live</div>
+                    <div class="notif-sub">Fast synthesis model now available — try it in the model selector.</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1674,80 +1832,58 @@
 
     /* ============ SETTINGS & TYPOGRAPHY ============ */
     const AVAILABLE_FONTS = [
-        {
-            id: 'jetbrains-mono',
-            name: 'JetBrains Mono',
-            category: 'Monospace (Default)',
-            family: "'JetBrains Mono', monospace",
-            sample: 'function render() { return 42; }'
-        },
-        {
-            id: 'inter',
-            name: 'Inter',
-            category: 'Modern UI Sans',
-            family: "'Inter', sans-serif",
-            sample: 'Designed for high-clarity interfaces'
-        },
-        {
-            id: 'fira-code',
-            name: 'Fira Code',
-            category: 'Programming Mono',
-            family: "'Fira Code', monospace",
-            sample: 'const code = async () => true;'
-        },
-        {
-            id: 'plus-jakarta-sans',
-            name: 'Plus Jakarta Sans',
-            category: 'Geometric Sans',
-            family: "'Plus Jakarta Sans', sans-serif",
-            sample: 'Harmonious layout & clean rhythm'
-        },
-        {
-            id: 'space-grotesk',
-            name: 'Space Grotesk',
-            category: 'Tech Neo-Grotesque',
-            family: "'Space Grotesk', sans-serif",
-            sample: 'Next-gen neural architecture'
-        },
-        {
-            id: 'instrument-serif',
-            name: 'Instrument Serif',
-            category: 'Editorial Serif',
-            family: "'Instrument Serif', Georgia, serif",
-            sample: 'Bespoke elegance & timeless form'
-        }
+        { id: 'jetbrains-mono', name: 'JetBrains Mono', category: 'Monospace (Default)', family: "'JetBrains Mono', monospace", sample: 'function render() { return 42; }' },
+        { id: 'inter', name: 'Inter', category: 'Modern UI Sans', family: "'Inter', sans-serif", sample: 'Designed for high-clarity interfaces' },
+        { id: 'fira-code', name: 'Fira Code', category: 'Programming Mono', family: "'Fira Code', monospace", sample: 'const code = async () => true;' },
+        { id: 'plus-jakarta-sans', name: 'Plus Jakarta Sans', category: 'Geometric Sans', family: "'Plus Jakarta Sans', sans-serif", sample: 'Harmonious layout & clean rhythm' },
+        { id: 'space-grotesk', name: 'Space Grotesk', category: 'Tech Neo-Grotesque', family: "'Space Grotesk', sans-serif", sample: 'Next-gen neural architecture' },
+        { id: 'instrument-serif', name: 'Instrument Serif', category: 'Editorial Serif', family: "'Instrument Serif', Georgia, serif", sample: 'Bespoke elegance & timeless form' }
+    ];
+
+    const AVAILABLE_THEMES = [
+        { id: 'mountain-mist', name: 'Mountain Mist', url: '/bg.jpg', color: '#c9d6e3', desc: 'Serene alpine panorama' },
+        { id: 'theme-2', name: 'Aurora Fade', url: '', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', desc: 'Ethereal purple aurora gradient', placeholder: true },
+        { id: 'theme-3', name: 'Soft Bloom', url: '', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', desc: 'Warm blush & rose gradient', placeholder: true }
     ];
 
     const settingsModal = document.getElementById('settingsModal');
     const settingsModalClose = document.getElementById('settingsModalClose');
     const closeSettingsDoneBtn = document.getElementById('closeSettingsDoneBtn');
     const resetFontBtn = document.getElementById('resetFontBtn');
-    const fontOptionsGrid = document.getElementById('fontOptionsGrid');
     const currentFontBadge = document.getElementById('currentFontBadge');
+    const fontDropdownMenu = document.getElementById('fontDropdownMenu');
+    const fontDropdownItems = document.getElementById('fontDropdownItems');
+    const fontDropdownSelected = document.getElementById('fontDropdownSelected');
+    const fontDropdownCategory = document.getElementById('fontDropdownCategory');
+    const themeDropdownMenu = document.getElementById('themeDropdownMenu');
+    const themeDropdownItems = document.getElementById('themeDropdownItems');
+    const themeDropdownSelected = document.getElementById('themeDropdownSelected');
+    const themeDropdownPreview = document.getElementById('themeDropdownPreview');
+    const currentThemeBadge = document.getElementById('currentThemeBadge');
     const settingsNavItem = document.getElementById('settingsNavItem');
 
     let currentFontId = 'jetbrains-mono';
+    let currentThemeId = 'mountain-mist';
 
-    function renderFontOptions(activeId) {
-        if (!fontOptionsGrid) return;
-        fontOptionsGrid.innerHTML = AVAILABLE_FONTS.map(f => {
+    // ---- Font dropdown ----
+    function renderFontDropdown(activeId) {
+        if (!fontDropdownItems) return;
+        fontDropdownItems.innerHTML = AVAILABLE_FONTS.map(f => {
             const isActive = f.id === activeId;
-            return `
-                <div class="font-option-card${isActive ? ' active' : ''}" data-font-id="${f.id}" title="Click to use ${escapeHtml(f.name)}">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
-                        <span style="font-family:${f.family};font-size:14px;font-weight:700;color:#111;">${escapeHtml(f.name)}</span>
-                        <div class="font-check-circle">${isActive ? '✓' : ''}</div>
-                    </div>
-                    <span style="font-size:11px;color:#888;font-weight:500;">${escapeHtml(f.category)}</span>
-                    <span style="font-family:${f.family};font-size:12px;color:#4b5563;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(f.sample)}</span>
+            return `<div class="settings-dropdown-item${isActive ? ' active' : ''}" data-font-id="${f.id}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;transition:background 0.12s;border-bottom:1px solid #f3f4f6;">
+                <div>
+                    <div style="font-family:${f.family};font-size:14px;font-weight:700;color:#111;">${f.name}</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:1px;">${f.category} · <span style="font-family:${f.family};">${f.sample}</span></div>
                 </div>
-            `;
+                ${isActive ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>' : '<div style="width:16px;"></div>'}
+            </div>`;
         }).join('');
-
-        fontOptionsGrid.querySelectorAll('.font-option-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const fontId = card.getAttribute('data-font-id');
-                applyFont(fontId);
+        fontDropdownItems.querySelectorAll('.settings-dropdown-item').forEach(item => {
+            item.addEventListener('mouseover', () => item.style.background = '#f9fafb');
+            item.addEventListener('mouseout', () => item.style.background = '');
+            item.addEventListener('click', () => {
+                applyFont(item.getAttribute('data-font-id'));
+                if (fontDropdownMenu) fontDropdownMenu.classList.remove('open');
             });
         });
     }
@@ -1756,32 +1892,120 @@
         const found = AVAILABLE_FONTS.find(f => f.id === fontId) || AVAILABLE_FONTS[0];
         currentFontId = found.id;
         document.documentElement.style.setProperty('--site-font', found.family);
-        try {
-            localStorage.setItem('ornament_selected_font', found.id);
-        } catch (e) {}
-        if (currentFontBadge) {
-            currentFontBadge.textContent = found.name;
-        }
-        renderFontOptions(found.id);
+        try { localStorage.setItem('ornament_selected_font', found.id); } catch (e) {}
+        if (currentFontBadge) currentFontBadge.textContent = found.name;
+        if (fontDropdownSelected) fontDropdownSelected.textContent = found.name;
+        if (fontDropdownCategory) fontDropdownCategory.textContent = found.category;
+        renderFontDropdown(found.id);
     }
 
     function loadAndApplySelectedFont() {
         let saved = 'jetbrains-mono';
-        try {
-            saved = localStorage.getItem('ornament_selected_font') || 'jetbrains-mono';
-        } catch (e) {}
+        try { saved = localStorage.getItem('ornament_selected_font') || 'jetbrains-mono'; } catch (e) {}
         applyFont(saved);
     }
 
+    // ---- Theme dropdown ----
+    function renderThemeDropdown(activeId) {
+        if (!themeDropdownItems) return;
+        themeDropdownItems.innerHTML = AVAILABLE_THEMES.map(t => {
+            const isActive = t.id === activeId;
+            const previewStyle = t.url ? `background:url('${t.url}') center/cover` : `background:${t.color}`;
+            return `<div class="settings-dropdown-item${isActive ? ' active' : ''}" data-theme-id="${t.id}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;transition:background 0.12s;border-bottom:1px solid #f3f4f6;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:40px;height:28px;border-radius:6px;${previewStyle};border:1px solid #e5e7eb;flex-shrink:0;"></div>
+                    <div>
+                        <div style="font-size:14px;font-weight:600;color:#111;">${t.name}</div>
+                        <div style="font-size:11px;color:#9ca3af;">${t.desc}${t.placeholder ? ' · <em>Coming soon</em>' : ''}</div>
+                    </div>
+                </div>
+                ${isActive ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>' : '<div style="width:16px;"></div>'}
+            </div>`;
+        }).join('');
+        themeDropdownItems.querySelectorAll('.settings-dropdown-item').forEach(item => {
+            item.addEventListener('mouseover', () => item.style.background = '#f9fafb');
+            item.addEventListener('mouseout', () => item.style.background = '');
+            item.addEventListener('click', () => {
+                const t = AVAILABLE_THEMES.find(x => x.id === item.getAttribute('data-theme-id'));
+                if (!t || t.placeholder) {
+                    showToast('Theme coming soon! Upload your own in a future update.');
+                    return;
+                }
+                applyTheme(t.id);
+                if (themeDropdownMenu) themeDropdownMenu.classList.remove('open');
+            });
+        });
+    }
+
+    function applyTheme(themeId) {
+        const found = AVAILABLE_THEMES.find(t => t.id === themeId) || AVAILABLE_THEMES[0];
+        currentThemeId = found.id;
+        const mainEl = document.querySelector('.main');
+        if (mainEl) {
+            if (found.url) {
+                mainEl.style.background = `#e8ecf1 url('${found.url}') center/cover no-repeat fixed`;
+            } else {
+                mainEl.style.background = found.color;
+            }
+        }
+        try { localStorage.setItem('ornament_selected_theme', found.id); } catch (e) {}
+        if (currentThemeBadge) currentThemeBadge.textContent = found.name;
+        if (themeDropdownSelected) themeDropdownSelected.textContent = found.name;
+        if (themeDropdownPreview) {
+            if (found.url) {
+                themeDropdownPreview.style.background = `url('${found.url}') center/cover`;
+            } else {
+                themeDropdownPreview.style.background = found.color;
+            }
+        }
+        renderThemeDropdown(found.id);
+    }
+
+    function loadAndApplySelectedTheme() {
+        let saved = 'mountain-mist';
+        try { saved = localStorage.getItem('ornament_selected_theme') || 'mountain-mist'; } catch (e) {}
+        applyTheme(saved);
+    }
+
+    // ---- Toast helper ----
+    function showToast(msg) {
+        const t = document.createElement('div');
+        t.textContent = msg;
+        t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 20px;border-radius:100px;font-size:13px;font-weight:500;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.3);transition:opacity 0.3s;';
+        document.body.appendChild(t);
+        setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2500);
+    }
+
+    // ---- Close dropdowns on outside click ----
+    document.addEventListener('click', (e) => {
+        if (fontDropdownMenu && !e.target.closest('#fontDropdownTrigger') && !e.target.closest('#fontDropdownMenu')) {
+            fontDropdownMenu.classList.remove('open');
+        }
+        if (themeDropdownMenu && !e.target.closest('#themeDropdownTrigger') && !e.target.closest('#themeDropdownMenu')) {
+            themeDropdownMenu.classList.remove('open');
+        }
+    });
+
+    // ---- CSS for open dropdown state ----
+    const dropdownStyle = document.createElement('style');
+    dropdownStyle.textContent = `
+        #fontDropdownMenu.open, #themeDropdownMenu.open { display:block !important; }
+        .settings-dropdown-item:last-child { border-bottom:none !important; }
+    `;
+    document.head.appendChild(dropdownStyle);
+
     function openSettingsModal() {
         if (!settingsModal) return;
-        renderFontOptions(currentFontId);
+        renderFontDropdown(currentFontId);
+        renderThemeDropdown(currentThemeId);
         settingsModal.style.display = 'flex';
     }
 
     function closeSettingsModal() {
         if (!settingsModal) return;
         settingsModal.style.display = 'none';
+        if (fontDropdownMenu) fontDropdownMenu.classList.remove('open');
+        if (themeDropdownMenu) themeDropdownMenu.classList.remove('open');
     }
 
     if (settingsNavItem) {
@@ -1793,19 +2017,17 @@
 
     if (settingsModalClose) settingsModalClose.addEventListener('click', closeSettingsModal);
     if (closeSettingsDoneBtn) closeSettingsDoneBtn.addEventListener('click', closeSettingsModal);
-    if (resetFontBtn) resetFontBtn.addEventListener('click', () => applyFont('jetbrains-mono'));
+    if (resetFontBtn) resetFontBtn.addEventListener('click', () => { applyFont('jetbrains-mono'); applyTheme('mountain-mist'); });
     if (settingsModal) {
-        settingsModal.addEventListener('click', (e) => {
-            if (e.target === settingsModal) closeSettingsModal();
-        });
+        settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettingsModal(); });
     }
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && settingsModal && settingsModal.style.display === 'flex') {
-            closeSettingsModal();
-        }
+        if (e.key === 'Escape' && settingsModal && settingsModal.style.display === 'flex') closeSettingsModal();
     });
 
     loadAndApplySelectedFont();
+    loadAndApplySelectedTheme();
+
 
     /* ============ SIDEBAR ============ */
     const body = document.body;
@@ -2505,12 +2727,16 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
             tabBtns.forEach(b => b.classList.toggle('active', b.dataset.file === (file.id || file.name)));
         }
 
+        let previewBuilt = false;
         function setView(view) {
             toggleBtns.forEach(b => b.classList.toggle('active', b.dataset.view === view));
             if (view === 'preview') {
                 codeView.classList.add('hidden');
                 previewView.classList.add('active');
-                iframe.srcdoc = buildPreviewDoc(files);
+                if (!previewBuilt) {
+                    previewBuilt = true;
+                    iframe.srcdoc = buildPreviewDoc(files);
+                }
             } else {
                 codeView.classList.remove('hidden');
                 previewView.classList.remove('active');
@@ -2688,36 +2914,187 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                     o.style.color = o === opt ? '#fff' : '#8e8e9f';
                 });
                 if (selectedModelLabel) {
-                    selectedModelLabel.textContent = currentSelectedModel === 'qwen' ? 'Orn\u00e0 2.5 Coder' : 'Instant Synthesizer';
+                    selectedModelLabel.textContent = currentSelectedModel === 'qwen' ? 'Orn\u00e0 2.5 Coder' : 'Orn\u00e0 2.5 (Instant)';
                 }
                 modelMenuPopover.style.display = 'none';
             });
         });
     }
 
-    const QWEN_ENGINEERING_FLOW = {
-        headerLabel: 'Orn\u00e0 2.5 Coder synthesizing project...',
-        doneLabel: 'Website ready (Synthesized by Orn\u00e0 2.5 Coder)',
-        items: [
-            'Querying local Orn\u00e0 2.5 Coder neural model',
-            'Synthesizing bespoke brand & layout architecture',
-            'Applying 60-30-10 color harmonization system',
-            'Writing production code bundle (HTML, CSS, JS)...',
-            'Validating responsive breakpoints & accessibility'
+    /* ============ DYNAMIC ACTIVITY FLOW GENERATION ============ */
+    const ALL_QWEN_STEPS = [
+        'Querying local Orn\u00e0 2.5 Coder neural model',
+        'Synthesizing bespoke brand & layout architecture',
+        'Applying 60-30-10 color harmonization system',
+        'Parsing semantic intent from prompt tokens',
+        'Bootstrapping project scaffold & file graph',
+        'Writing production HTML5 markup...',
+        'Generating responsive CSS variable system',
+        'Composing adaptive layout grid structure',
+        'Applying micro-interaction animation tokens',
+        'Wiring client-side JavaScript event handlers',
+        'Running accessibility audit (WCAG 2.1 AA)',
+        'Validating responsive breakpoints across viewports',
+        'Optimizing critical render path & paint order',
+        'Injecting color palette from visual analysis',
+        'Calibrating typographic scale & line heights',
+        'Cross-referencing design system tokens',
+        'Synthesizing component hierarchy from spec',
+        'Generating semantic HTML landmark regions',
+        'Building interactive widget state machines',
+        'Compiling CSS utility class index',
+        'Resolving z-index stacking context graph',
+        'Applying glassmorphism & depth tokens',
+        'Integrating smooth-scroll behavior patterns',
+        'Writing CSS custom property definitions',
+        'Attaching DOM mutation observer hooks',
+        'Profiling layout shift prevention rules',
+        'Generating ARIA label matrix',
+        'Composing keyboard navigation flow',
+        'Linking focus trap for modal components',
+        'Running contrast ratio compliance check',
+        'Synthesizing animation keyframe library',
+        'Bundling production-ready output files',
+        'Generating ZIP archive manifest',
+        'Attaching download handler bindings',
+        'Running final lint & format pass',
+        'Finalizing Git checkpoint & preview render'
+    ];
+
+    const ALL_INSTANT_STEPS = [
+        'Analyzing prompt tokens & visual intent',
+        'Deriving optimal color palette',
+        'Scaffolding responsive layout structure',
+        'Writing HTML semantic markup',
+        'Generating CSS style declarations',
+        'Wiring JavaScript interactions',
+        'Bundling output files',
+        'Validating preview render',
+        'Finalizing output bundle'
+    ];
+
+    // Keyword-to-step library for task-specific messages
+    const TASK_STEP_OVERRIDES = {
+        form: [
+            'Analyzing form field hierarchy & validation rules',
+            'Building input component state machine',
+            'Wiring real-time form validation logic',
+            'Generating accessible label/aria mappings',
+            'Composing submit handler & error feedback system',
+            'Testing edge-case empty/invalid state coverage'
+        ],
+        dashboard: [
+            'Generating dashboard grid layout system',
+            'Building metric card component library',
+            'Wiring data table sort & filter engine',
+            'Composing chart placeholder architecture',
+            'Rendering sidebar navigation tree',
+            'Attaching responsive collapse behavior'
+        ],
+        landing: [
+            'Generating hero section visual impact layer',
+            'Building feature card component grid',
+            'Composing CTA section & conversion hooks',
+            'Wiring smooth-scroll & parallax effects',
+            'Optimizing above-the-fold render path',
+            'Generating SEO meta & OG tag schema'
+        ],
+        portfolio: [
+            'Generating portfolio grid masonry layout',
+            'Building project card hover interaction system',
+            'Composing bio & skills section markup',
+            'Wiring contact form validation pipeline',
+            'Applying custom cursor & reveal animations',
+            'Generating dark/light mode toggle logic'
+        ],
+        ecommerce: [
+            'Generating product grid & card components',
+            'Building cart state management system',
+            'Composing checkout flow step wizard',
+            'Wiring quantity increment/decrement controls',
+            'Generating filter & sort sidebar logic',
+            'Building product image gallery carousel'
+        ],
+        blog: [
+            'Generating article card & excerpt components',
+            'Building tag & category filter system',
+            'Composing reading progress indicator',
+            'Wiring search autocomplete component',
+            'Generating pagination & infinite scroll logic',
+            'Applying syntax-highlighted code block styles'
+        ],
+        navbar: [
+            'Building responsive navigation component',
+            'Wiring mobile hamburger menu toggle',
+            'Composing dropdown sub-navigation tree',
+            'Applying scroll-aware shrink animation',
+            'Generating mega-menu markup & aria roles'
+        ],
+        auth: [
+            'Generating login/register form markup',
+            'Building password strength meter component',
+            'Wiring JWT token validation placeholder',
+            'Composing OAuth provider button row',
+            'Applying secure input masking patterns'
         ]
     };
 
-    const INSTANT_ENGINEERING_FLOW = {
-        headerLabel: 'Instant Synthesizer generating project...',
-        doneLabel: 'Website ready',
-        items: [
-            'Analyzing prompt tokens & visual intent',
-            'Deriving optimal 60-30-10 design system',
-            'Scaffolding responsive layouts & interactive widgets',
-            'Writing production code bundle (HTML, CSS, JS)...',
-            'Finalizing Git checkpoint & live preview'
-        ]
-    };
+    function getTaskSteps(prompt) {
+        if (!prompt) return [];
+        const p = prompt.toLowerCase();
+        let extra = [];
+        if (p.includes('form') || p.includes('input') || p.includes('submit')) extra.push(...TASK_STEP_OVERRIDES.form);
+        if (p.includes('dashboard') || p.includes('admin') || p.includes('panel')) extra.push(...TASK_STEP_OVERRIDES.dashboard);
+        if (p.includes('landing') || p.includes('homepage') || p.includes('hero')) extra.push(...TASK_STEP_OVERRIDES.landing);
+        if (p.includes('portfolio') || p.includes('personal site')) extra.push(...TASK_STEP_OVERRIDES.portfolio);
+        if (p.includes('ecommerce') || p.includes('shop') || p.includes('store') || p.includes('cart') || p.includes('product')) extra.push(...TASK_STEP_OVERRIDES.ecommerce);
+        if (p.includes('blog') || p.includes('article') || p.includes('post')) extra.push(...TASK_STEP_OVERRIDES.blog);
+        if (p.includes('navbar') || p.includes('navigation') || p.includes('menu')) extra.push(...TASK_STEP_OVERRIDES.navbar);
+        if (p.includes('login') || p.includes('auth') || p.includes('register') || p.includes('signup')) extra.push(...TASK_STEP_OVERRIDES.auth);
+        return [...new Set(extra)]; // dedupe
+    }
+
+    function buildQwenFlow(userPrompt) {
+        const taskSteps = getTaskSteps(userPrompt);
+        // Merge: base steps + task steps inserted mid-way, capped at ~12 total for good UX
+        let steps = [
+            ALL_QWEN_STEPS[0],
+            ALL_QWEN_STEPS[1],
+            ...taskSteps.slice(0, 4),
+            ALL_QWEN_STEPS[2],
+            ALL_QWEN_STEPS[3],
+            ALL_QWEN_STEPS[10],
+            ALL_QWEN_STEPS[11],
+            ALL_QWEN_STEPS[31],
+            ALL_QWEN_STEPS[35]
+        ];
+        // Dedupe, cap at 10 visible steps for clean UX
+        steps = [...new Set(steps)].slice(0, 10);
+        return {
+            headerLabel: 'Orn\u00e0 2.5 Coder synthesizing project...',
+            doneLabel: 'Website ready (Synthesized by Orn\u00e0 2.5 Coder)',
+            items: steps
+        };
+    }
+
+    function buildInstantFlow(userPrompt) {
+        const taskSteps = getTaskSteps(userPrompt);
+        let steps = [
+            ALL_INSTANT_STEPS[0],
+            ...taskSteps.slice(0, 2),
+            ALL_INSTANT_STEPS[1],
+            ALL_INSTANT_STEPS[2],
+            ALL_INSTANT_STEPS[3],
+            ALL_INSTANT_STEPS[4],
+            ALL_INSTANT_STEPS[7]
+        ];
+        steps = [...new Set(steps)].slice(0, 7);
+        return {
+            headerLabel: 'Orn\u00e0 2.5 (Instant) synthesizing...',
+            doneLabel: 'Website ready (Orn\u00e0 2.5 Instant)',
+            items: steps
+        };
+    }
 
     const SPARKLE_ICON = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.3L19 10l-5.2 1.7L12 17l-1.8-5.3L5 10l5.2-1.7L12 3z"/><path d="M19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16z"/></svg>';
 
@@ -2997,7 +3374,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
             requestModelChatTitle(currentChatId, text);
         }
 
-        const currentFlow = currentSelectedModel === 'qwen' ? QWEN_ENGINEERING_FLOW : INSTANT_ENGINEERING_FLOW;
+        const currentFlow = currentSelectedModel === 'qwen' ? buildQwenFlow(text) : buildInstantFlow(text);
         if (hasAttachments || isCodingTask(text)) {
             showAssistantActivityFlow(currentFlow, text, attachmentsData);
         } else {
@@ -3295,6 +3672,141 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && previewModal.classList.contains('visible')) {
             closePreview();
+        }
+    });
+
+    /* ============ SEARCH ============ */
+    const searchModal = document.getElementById('searchModal');
+    const searchModalInput = document.getElementById('searchModalInput');
+    const searchModalResults = document.getElementById('searchModalResults');
+    const globalSearchInput = document.getElementById('globalSearchInput');
+    const globalSearchBar = document.getElementById('globalSearchBar');
+
+    const COMMANDS = [
+        { title: 'New Chat', sub: 'Start a fresh conversation', action: () => startNewChat(), icon: '<path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/>' },
+        { title: 'Settings', sub: 'Open settings & personalization', action: () => openSettingsModal(), icon: '<circle cx="12" cy="12" r="3"/>' },
+        { title: 'Edit Profile', sub: 'Update your name and avatar', action: () => openProfileModal(), icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' }
+    ];
+
+    function renderSearchResults(query) {
+        if (!searchModalResults) return;
+        const q = (query || '').toLowerCase().trim();
+
+        let html = '';
+
+        // Commands section
+        const matchedCmds = q ? COMMANDS.filter(c => c.title.toLowerCase().includes(q) || c.sub.toLowerCase().includes(q)) : COMMANDS;
+        if (matchedCmds.length) {
+            html += `<div class="search-section-label">Commands</div>`;
+            html += matchedCmds.map((c, i) => `
+                <div class="search-result-item" data-cmd-idx="${i}">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg>
+                    <div><div class="sr-title">${c.title}</div><div class="sr-sub">${c.sub}</div></div>
+                </div>`).join('');
+        }
+
+        // Recent chats section
+        const matchedChats = q
+            ? chatSessions.filter(c => c.title.toLowerCase().includes(q)).slice(0, 5)
+            : chatSessions.slice(0, 5);
+        if (matchedChats.length) {
+            html += `<div class="search-section-label">Recent Chats</div>`;
+            html += matchedChats.map(c => `
+                <div class="search-result-item" data-chat-search-id="${c.id}">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <div><div class="sr-title">${escapeHtml(c.title)}</div><div class="sr-sub">Chat session</div></div>
+                </div>`).join('');
+        }
+
+        if (!html) {
+            html = `<div class="search-empty">No results found for &ldquo;${escapeHtml(q)}&rdquo;</div>`;
+        }
+
+        searchModalResults.innerHTML = html;
+
+        // Wire command clicks
+        searchModalResults.querySelectorAll('[data-cmd-idx]').forEach(el => {
+            el.addEventListener('click', () => {
+                const cmd = matchedCmds[parseInt(el.getAttribute('data-cmd-idx'))];
+                if (cmd) { closeSearchModal(); cmd.action(); }
+            });
+        });
+
+        // Wire chat clicks
+        searchModalResults.querySelectorAll('[data-chat-search-id]').forEach(el => {
+            el.addEventListener('click', () => {
+                const id = el.getAttribute('data-chat-search-id');
+                closeSearchModal();
+                openChat(id);
+            });
+        });
+    }
+
+    function openSearchModal() {
+        if (!searchModal) return;
+        searchModal.classList.add('open');
+        if (searchModalInput) {
+            searchModalInput.value = '';
+            setTimeout(() => searchModalInput.focus(), 50);
+        }
+        renderSearchResults('');
+    }
+
+    function closeSearchModal() {
+        if (searchModal) searchModal.classList.remove('open');
+    }
+
+    if (searchModalInput) {
+        searchModalInput.addEventListener('input', () => renderSearchResults(searchModalInput.value));
+        searchModalInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSearchModal(); });
+    }
+
+    if (searchModal) {
+        searchModal.addEventListener('click', (e) => { if (e.target === searchModal) closeSearchModal(); });
+    }
+
+    // Wire search bar click + Ctrl/Cmd+K
+    if (globalSearchBar) {
+        globalSearchBar.addEventListener('click', () => openSearchModal());
+    }
+    if (globalSearchInput) {
+        globalSearchInput.addEventListener('focus', () => { globalSearchInput.blur(); openSearchModal(); });
+    }
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            openSearchModal();
+        }
+    });
+
+    /* ============ NOTIFICATIONS ============ */
+    const notifBtn = document.getElementById('notifBtn');
+    const notifPanel = document.getElementById('notifPanel');
+    const notifDot = document.getElementById('notifDot');
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+
+    // Show notification dot on load (we have 2 unread)
+    if (notifDot) notifDot.style.display = 'block';
+
+    if (notifBtn) {
+        notifBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (notifPanel) notifPanel.classList.toggle('open');
+            // Hide dot once opened
+            if (notifDot) notifDot.style.display = 'none';
+        });
+    }
+
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', () => {
+            const dots = document.querySelectorAll('#notifList .notif-dot-status');
+            dots.forEach(d => { d.style.background = '#d1d5db'; });
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (notifPanel && !e.target.closest('#notifBtn') && !e.target.closest('#notifPanel')) {
+            notifPanel.classList.remove('open');
         }
     });
 </script>
