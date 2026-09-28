@@ -170,7 +170,14 @@ def generate_site(req: GenerateSiteRequest):
         "You are Ornàment 2.5 Coder (Neural 7B), an elite autonomous staff software engineer. "
         "When asked to create or update a website, write clean, modern, responsive code with bespoke styling, "
         "fluid layouts, accessible elements, and dynamic interactions. "
-        "Provide your solution across clear markdown code blocks with filenames, e.g.:\n"
+        "First, output 5 to 6 concise technical execution steps tailored specifically to this request under:\n"
+        "### Execution Steps:\n"
+        "1. <Specific step 1 tailored to the requested components & data>\n"
+        "2. <Specific step 2 tailored to HTML semantic structure>\n"
+        "3. <Specific step 3 tailored to CSS layout & color tokens>\n"
+        "4. <Specific step 4 tailored to JavaScript logic & events>\n"
+        "5. <Specific step 5 tailored to responsive breakpoints & accessibility>\n\n"
+        "Then provide your solution across clear markdown code blocks with filenames, e.g.:\n"
         "```html index.html\n<!DOCTYPE html>...\n```\n"
         "```css style.css\n/* CSS styling */\n```\n"
         "```javascript app.js\n// JavaScript logic\n```"
@@ -212,10 +219,34 @@ def generate_site(req: GenerateSiteRequest):
     elapsed = round(time.time() - start_time, 2)
 
     extracted_files = extract_code_blocks(raw_response)
+
+    # Extract dynamic execution steps from raw response
+    steps = []
+    plan_m = re.search(r"###\s*(?:Execution\s*Steps|Plan|Engineering\s*Steps|Steps)[\s\S]*?(?=```|$)", raw_response, re.IGNORECASE)
+    if plan_m:
+        for line in plan_m.group(0).split("\n"):
+            line = line.strip()
+            m = re.match(r"^\d+[\.\)]\s*(?:\*\*(.*?)\*\*:?\s*)?(.*)$", line)
+            if m:
+                t = (m.group(1) or "").strip()
+                s = (m.group(2) or "").strip()
+                step_str = f"{t}: {s}".strip(" :") if t and s else (t or s)
+                step_str = re.sub(r"[*`#_]+", "", step_str).strip()
+                if step_str and not step_str.lower().startswith("execution step"):
+                    steps.append(step_str)
+    
+    if len(steps) < 3:
+        steps = [
+            f"Synthesizing bespoke architecture for {req.prompt[:32]}",
+            "Scaffolding semantic HTML5 layout & accessible landmarks",
+            "Composing responsive CSS styling & color harmony system",
+            "Wiring client-side JavaScript interactions & state management",
+            "Validating responsive breakpoints across viewports",
+            "Bundling production-ready output files"
+        ]
     
     # If css/js were embedded in html, extract them if needed or provide standard bundle
     if "index.html" in extracted_files and "style.css" not in extracted_files:
-        # Check if style was inline in html
         style_match = re.search(r'<style>([\s\S]*?)</style>', extracted_files["index.html"], re.IGNORECASE)
         if style_match:
             extracted_files["style.css"] = style_match.group(1).strip()
@@ -240,6 +271,7 @@ def generate_site(req: GenerateSiteRequest):
         "elapsed_seconds": elapsed,
         "model": CODER_MODEL_NAME,
         "files": file_list,
+        "steps": steps,
         "raw_text": raw_response
     }
 

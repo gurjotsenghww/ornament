@@ -310,6 +310,23 @@ async def generate_site_endpoint(req: GenerateSiteRequest):
     )
     return result
 
+@app.post("/api/generate-site-stream")
+async def generate_site_stream_endpoint(req: GenerateSiteRequest):
+    from ornament.generator.autonomous_site_builder import AutonomousSiteBuilder
+    from fastapi.responses import StreamingResponse
+    att_dicts = [a.model_dump() for a in req.attachments] if req.attachments else []
+
+    def event_stream():
+        yield from AutonomousSiteBuilder.stream_site_bundle(
+            prompt=req.prompt,
+            attachments=att_dicts,
+            project_name=req.project_name,
+            model=req.model or "qwen",
+            existing_files=req.existing_files
+        )
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
 @app.post("/api/projects/{project_name}/simulate-bug")
 async def simulate_bug(project_name: str):
     p_dir = get_project_dir(project_name)

@@ -3102,178 +3102,21 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         });
     }
 
-    /* ============ DYNAMIC ACTIVITY FLOW GENERATION ============ */
-    const ALL_QWEN_STEPS = [
-        'Querying local Orn\u00e0 2.5 Coder neural model',
-        'Synthesizing bespoke brand & layout architecture',
-        'Applying 60-30-10 color harmonization system',
-        'Parsing semantic intent from prompt tokens',
-        'Bootstrapping project scaffold & file graph',
-        'Writing production HTML5 markup...',
-        'Generating responsive CSS variable system',
-        'Composing adaptive layout grid structure',
-        'Applying micro-interaction animation tokens',
-        'Wiring client-side JavaScript event handlers',
-        'Running accessibility audit (WCAG 2.1 AA)',
-        'Validating responsive breakpoints across viewports',
-        'Optimizing critical render path & paint order',
-        'Injecting color palette from visual analysis',
-        'Calibrating typographic scale & line heights',
-        'Cross-referencing design system tokens',
-        'Synthesizing component hierarchy from spec',
-        'Generating semantic HTML landmark regions',
-        'Building interactive widget state machines',
-        'Compiling CSS utility class index',
-        'Resolving z-index stacking context graph',
-        'Applying glassmorphism & depth tokens',
-        'Integrating smooth-scroll behavior patterns',
-        'Writing CSS custom property definitions',
-        'Attaching DOM mutation observer hooks',
-        'Profiling layout shift prevention rules',
-        'Generating ARIA label matrix',
-        'Composing keyboard navigation flow',
-        'Linking focus trap for modal components',
-        'Running contrast ratio compliance check',
-        'Synthesizing animation keyframe library',
-        'Bundling production-ready output files',
-        'Generating ZIP archive manifest',
-        'Attaching download handler bindings',
-        'Running final lint & format pass',
-        'Finalizing Git checkpoint & preview render'
-    ];
+    /* ============ DYNAMIC ACTIVITY FLOW GENERATION (MODEL-DRIVEN) ============ */
+    function deriveInitialDynamicFlow(userPrompt, model) {
+        const isInstant = model === 'instant';
+        const modelLabel = isInstant ? 'Orn\u00e0 2.5 (Instant)' : 'Orn\u00e0 2.5 Coder';
+        const cleanPrompt = (userPrompt || '').trim().replace(/[\r\n]+/g, ' ');
+        const pBrief = cleanPrompt ? (cleanPrompt.length > 42 ? cleanPrompt.slice(0, 42) + '...' : cleanPrompt) : 'bespoke specification';
 
-    const ALL_INSTANT_STEPS = [
-        'Analyzing prompt tokens & visual intent',
-        'Deriving optimal color palette',
-        'Scaffolding responsive layout structure',
-        'Writing HTML semantic markup',
-        'Generating CSS style declarations',
-        'Wiring JavaScript interactions',
-        'Bundling output files',
-        'Validating preview render',
-        'Finalizing output bundle'
-    ];
-
-    // Keyword-to-step library for task-specific messages
-    const TASK_STEP_OVERRIDES = {
-        form: [
-            'Analyzing form field hierarchy & validation rules',
-            'Building input component state machine',
-            'Wiring real-time form validation logic',
-            'Generating accessible label/aria mappings',
-            'Composing submit handler & error feedback system',
-            'Testing edge-case empty/invalid state coverage'
-        ],
-        dashboard: [
-            'Generating dashboard grid layout system',
-            'Building metric card component library',
-            'Wiring data table sort & filter engine',
-            'Composing chart placeholder architecture',
-            'Rendering sidebar navigation tree',
-            'Attaching responsive collapse behavior'
-        ],
-        landing: [
-            'Generating hero section visual impact layer',
-            'Building feature card component grid',
-            'Composing CTA section & conversion hooks',
-            'Wiring smooth-scroll & parallax effects',
-            'Optimizing above-the-fold render path',
-            'Generating SEO meta & OG tag schema'
-        ],
-        portfolio: [
-            'Generating portfolio grid masonry layout',
-            'Building project card hover interaction system',
-            'Composing bio & skills section markup',
-            'Wiring contact form validation pipeline',
-            'Applying custom cursor & reveal animations',
-            'Generating dark/light mode toggle logic'
-        ],
-        ecommerce: [
-            'Generating product grid & card components',
-            'Building cart state management system',
-            'Composing checkout flow step wizard',
-            'Wiring quantity increment/decrement controls',
-            'Generating filter & sort sidebar logic',
-            'Building product image gallery carousel'
-        ],
-        blog: [
-            'Generating article card & excerpt components',
-            'Building tag & category filter system',
-            'Composing reading progress indicator',
-            'Wiring search autocomplete component',
-            'Generating pagination & infinite scroll logic',
-            'Applying syntax-highlighted code block styles'
-        ],
-        navbar: [
-            'Building responsive navigation component',
-            'Wiring mobile hamburger menu toggle',
-            'Composing dropdown sub-navigation tree',
-            'Applying scroll-aware shrink animation',
-            'Generating mega-menu markup & aria roles'
-        ],
-        auth: [
-            'Generating login/register form markup',
-            'Building password strength meter component',
-            'Wiring JWT token validation placeholder',
-            'Composing OAuth provider button row',
-            'Applying secure input masking patterns'
-        ]
-    };
-
-    function getTaskSteps(prompt) {
-        if (!prompt) return [];
-        const p = prompt.toLowerCase();
-        let extra = [];
-        if (p.includes('form') || p.includes('input') || p.includes('submit')) extra.push(...TASK_STEP_OVERRIDES.form);
-        if (p.includes('dashboard') || p.includes('admin') || p.includes('panel')) extra.push(...TASK_STEP_OVERRIDES.dashboard);
-        if (p.includes('landing') || p.includes('homepage') || p.includes('hero')) extra.push(...TASK_STEP_OVERRIDES.landing);
-        if (p.includes('portfolio') || p.includes('personal site')) extra.push(...TASK_STEP_OVERRIDES.portfolio);
-        if (p.includes('ecommerce') || p.includes('shop') || p.includes('store') || p.includes('cart') || p.includes('product')) extra.push(...TASK_STEP_OVERRIDES.ecommerce);
-        if (p.includes('blog') || p.includes('article') || p.includes('post')) extra.push(...TASK_STEP_OVERRIDES.blog);
-        if (p.includes('navbar') || p.includes('navigation') || p.includes('menu')) extra.push(...TASK_STEP_OVERRIDES.navbar);
-        if (p.includes('login') || p.includes('auth') || p.includes('register') || p.includes('signup')) extra.push(...TASK_STEP_OVERRIDES.auth);
-        return [...new Set(extra)]; // dedupe
-    }
-
-    function buildQwenFlow(userPrompt) {
-        const taskSteps = getTaskSteps(userPrompt);
-        // Merge: base steps + task steps inserted mid-way, capped at ~12 total for good UX
-        let steps = [
-            ALL_QWEN_STEPS[0],
-            ALL_QWEN_STEPS[1],
-            ...taskSteps.slice(0, 4),
-            ALL_QWEN_STEPS[2],
-            ALL_QWEN_STEPS[3],
-            ALL_QWEN_STEPS[10],
-            ALL_QWEN_STEPS[11],
-            ALL_QWEN_STEPS[31],
-            ALL_QWEN_STEPS[35]
-        ];
-        // Dedupe, cap at 10 visible steps for clean UX
-        steps = [...new Set(steps)].slice(0, 10);
         return {
-            headerLabel: 'Orn\u00e0 2.5 Coder synthesizing project...',
-            doneLabel: 'Website ready (Synthesized by Orn\u00e0 2.5 Coder)',
-            items: steps
-        };
-    }
-
-    function buildInstantFlow(userPrompt) {
-        const taskSteps = getTaskSteps(userPrompt);
-        let steps = [
-            ALL_INSTANT_STEPS[0],
-            ...taskSteps.slice(0, 2),
-            ALL_INSTANT_STEPS[1],
-            ALL_INSTANT_STEPS[2],
-            ALL_INSTANT_STEPS[3],
-            ALL_INSTANT_STEPS[4],
-            ALL_INSTANT_STEPS[7]
-        ];
-        steps = [...new Set(steps)].slice(0, 7);
-        return {
-            headerLabel: 'Orn\u00e0 2.5 (Instant) synthesizing...',
-            doneLabel: 'Website ready (Orn\u00e0 2.5 Instant)',
-            items: steps
+            headerLabel: `${modelLabel} synthesizing project...`,
+            doneLabel: `Website ready (Synthesized by ${modelLabel})`,
+            items: [
+                `Connecting to ${modelLabel} neural inference engine`,
+                `Ingesting prompt tokens for "${pBrief}"`,
+                `Synthesizing dynamic architecture & code via Qwen`
+            ]
         };
     }
 
@@ -3312,6 +3155,34 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         panel._statusEl = panel.querySelector('.activity-status');
         panel._items = Array.from(panel.querySelectorAll('.activity-item'));
         return panel;
+    }
+
+    function updateActivityPanelWithModelSteps(panel, steps, activeIndex) {
+        if (!panel || !steps || !steps.length) return;
+        const listEl = panel.querySelector('.activity-list');
+        if (!listEl) return;
+
+        listEl.innerHTML = steps.map((label, i) => {
+            let state = 'upcoming';
+            if (typeof activeIndex === 'number') {
+                if (i < activeIndex) state = 'done';
+                else if (i === activeIndex) state = 'active';
+                else state = 'upcoming';
+            } else {
+                state = 'done';
+            }
+            const barWidth = state === 'done' ? '100%' : (state === 'active' ? '85%' : '0%');
+            return `
+                <div class="activity-item" data-index="${i}" data-state="${state}">
+                    <span class="activity-circle">
+                        <svg class="icon-check" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
+                    <span class="activity-label">${escapeHtml(label)}</span>
+                    <div class="activity-progress-wrap"><div class="activity-progress-bar" style="width:${barWidth};"></div></div>
+                </div>
+            `;
+        }).join('');
+        panel._items = Array.from(panel.querySelectorAll('.activity-item'));
     }
 
     function updateActivityPanel(panel, flow, activeIndex) {
@@ -3357,54 +3228,119 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         scrollChatToBottom();
 
         const startedAt = Date.now();
-        const isQwen = currentSelectedModel === 'qwen';
-        const stepInterval = isQwen ? 5800 : 450;
-        let stepIndex = 0;
-        updateActivityPanel(panel, flow, 0);
+        let currentSteps = [...flow.items];
+        let streamDone = false;
 
-        const stepTimer = setInterval(() => {
-            if (stepIndex < flow.items.length - 2) {
-                stepIndex++;
-                updateActivityPanel(panel, flow, stepIndex);
-                scrollChatToBottom();
-            }
-        }, stepInterval);
+        updateActivityPanel(panel, flow, 0);
+        const initTimer = setTimeout(() => {
+            if (!streamDone) updateActivityPanel(panel, flow, 1);
+        }, 1200);
 
         try {
-            const res = await fetch('/api/generate-site', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt: userPrompt,
-                    attachments: attachmentsData,
-                    model: currentSelectedModel,
-                    existing_files: currentSessionGeneratedFiles
-                })
-            });
+            const payload = {
+                prompt: userPrompt,
+                attachments: attachmentsData,
+                model: currentSelectedModel,
+                existing_files: currentSessionGeneratedFiles
+            };
 
-            if (!res.ok) throw new Error('API status ' + res.status);
-            const data = await res.json();
-            clearInterval(stepTimer);
+            let responseData = null;
+            let streamSuccess = false;
 
-            if (data.files && data.files.length) {
-                currentSessionGeneratedFiles = data.files;
+            // Attempt live streaming from /api/generate-site-stream
+            try {
+                const streamRes = await fetch('/api/generate-site-stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (streamRes.ok && streamRes.body) {
+                    const reader = streamRes.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, { stream: true });
+                        const blocks = buffer.split('\n\n');
+                        buffer = blocks.pop();
+
+                        for (const block of blocks) {
+                            if (!block.trim()) continue;
+                            let eventName = 'message';
+                            let dataStr = '';
+                            const bLines = block.split('\n');
+                            for (const bl of bLines) {
+                                if (bl.startsWith('event:')) eventName = bl.replace('event:', '').trim();
+                                if (bl.startsWith('data:')) dataStr = bl.replace('data:', '').trim();
+                            }
+                            if (!dataStr) continue;
+                            try {
+                                const parsed = JSON.parse(dataStr);
+                                if (eventName === 'plan' && parsed.steps && parsed.steps.length) {
+                                    clearTimeout(initTimer);
+                                    currentSteps = parsed.steps;
+                                    updateActivityPanelWithModelSteps(panel, currentSteps, 0);
+                                    scrollChatToBottom();
+                                } else if (eventName === 'phase') {
+                                    if (currentSteps && currentSteps.length) {
+                                        const p = parsed.phase;
+                                        const idx = p === 'html' ? 1 : (p === 'css' ? 2 : (p === 'js' ? 3 : 1));
+                                        updateActivityPanelWithModelSteps(panel, currentSteps, Math.min(idx, currentSteps.length - 1));
+                                        scrollChatToBottom();
+                                    }
+                                } else if (eventName === 'complete') {
+                                    responseData = parsed;
+                                    streamSuccess = true;
+                                }
+                            } catch (e) {
+                                console.warn('SSE parse error:', e);
+                            }
+                        }
+                    }
+                }
+            } catch (streamErr) {
+                console.warn('Streaming connection failed, falling back to standard API:', streamErr);
             }
 
-            updateActivityPanel(panel, flow, flow.items.length - 1);
-            setTimeout(() => {
-                const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
-                finalizeActivityPanel(panel, flow, elapsed);
-                const explorer = buildCodeExplorer(data.files, data.project_name);
-                const explanation = buildCodeExplanation(data.files, data.explanation);
-                reply.appendChild(explorer);
-                reply.appendChild(explanation);
-                scrollChatToBottom();
-                saveCurrentChat();
-            }, 600);
+            // Fallback to standard /api/generate-site if streaming didn't complete
+            if (!streamSuccess || !responseData) {
+                const res = await fetch('/api/generate-site', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error('API status ' + res.status);
+                responseData = await res.json();
+            }
+
+            streamDone = true;
+            clearTimeout(initTimer);
+
+            if (responseData.files && responseData.files.length) {
+                currentSessionGeneratedFiles = responseData.files;
+            }
+
+            // Populate real Qwen steps and finalize
+            const finalSteps = (responseData.steps && responseData.steps.length) ? responseData.steps : currentSteps;
+            updateActivityPanelWithModelSteps(panel, finalSteps, finalSteps.length);
+
+            const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
+            finalizeActivityPanel(panel, flow, elapsed);
+
+            const explorer = buildCodeExplorer(responseData.files, responseData.project_name);
+            const explanation = buildCodeExplanation(responseData.files, responseData.explanation);
+            reply.appendChild(explorer);
+            reply.appendChild(explanation);
+            scrollChatToBottom();
+            saveCurrentChat();
 
         } catch (err) {
             console.error('Synthesis failed:', err);
-            clearInterval(stepTimer);
+            clearTimeout(initTimer);
+            streamDone = true;
             panel._statusEl.textContent = 'Synthesis interrupted';
             panel._items.forEach(item => {
                 if (item.dataset.state === 'active') item.dataset.state = 'error';
@@ -3573,7 +3509,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
             requestModelChatTitle(currentChatId, text);
         }
 
-        const currentFlow = currentSelectedModel === 'instant' ? buildInstantFlow(text) : buildQwenFlow(text);
+        const currentFlow = deriveInitialDynamicFlow(text, currentSelectedModel);
         if (hasAttachments || isCodingTask(text)) {
             showAssistantActivityFlow(currentFlow, text, attachmentsData);
         } else {
