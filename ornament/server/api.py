@@ -228,6 +228,7 @@ class GenerateSiteRequest(BaseModel):
     project_name: Optional[str] = None
     attachments: Optional[List[GenerateSiteAttachment]] = None
     model: Optional[str] = "qwen"
+    existing_files: Optional[List[Dict[str, Any]]] = None
 
 @app.get("/api/models")
 def list_available_models():
@@ -243,8 +244,8 @@ def list_available_models():
         },
         {
             "id": "instant",
-            "name": "Instant Synthesizer",
-            "description": "Deterministic design-theory synthesis engine with 60-30-10 color harmonization",
+            "name": "Orn\u00e0 2.5 (Instant)",
+            "description": "Fast deterministic synthesis engine with 60-30-10 color harmonization",
             "ready": True,
             "default": False
         }
@@ -258,7 +259,8 @@ async def generate_site_endpoint(req: GenerateSiteRequest):
         prompt=req.prompt,
         attachments=att_dicts,
         project_name=req.project_name,
-        model=req.model or "qwen"
+        model=req.model or "qwen",
+        existing_files=req.existing_files
     )
     return result
 
@@ -424,20 +426,9 @@ class ConversationalChatPayload(BaseModel):
     message: str
     history: Optional[List[Dict[str, str]]] = None  # [{"role": "user"|"assistant", "content": "..."}]
 
-_llm_instance = None
-
 def get_local_llm():
-    global _llm_instance
-    if _llm_instance is None:
-        try:
-            from llama_cpp import Llama
-            weights = settings.base_dir / "ai-website-engineer-model" / "weights" / "qwen2.5-coder-3b-instruct-q4_k_m.gguf"
-            if not weights.exists():
-                return None
-            _llm_instance = Llama(model_path=str(weights), n_ctx=4096, n_threads=4, verbose=False)
-        except Exception as e:
-            return None
-    return _llm_instance
+    from ornament.generator.autonomous_site_builder import AutonomousSiteBuilder
+    return AutonomousSiteBuilder.get_qwen_model()
 
 @app.post("/api/chat")
 def chat_conversational(payload: ConversationalChatPayload):

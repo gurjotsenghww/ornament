@@ -129,16 +129,20 @@ class AutonomousSiteBuilder:
 
     @classmethod
     def get_qwen_model(cls):
-        """Lazy loads local Qwen2.5-Coder-3B-Instruct GGUF model via llama-cpp-python on CPU."""
+        """Lazy loads local Qwen2.5-Coder-3B-Instruct GGUF model via llama-cpp-python."""
         if cls._llm_instance is None:
             try:
+                import os
                 from llama_cpp import Llama
                 weights = settings.base_dir / "ai-website-engineer-model" / "weights" / "qwen2.5-coder-3b-instruct-q4_k_m.gguf"
                 if weights.exists():
+                    cores = os.cpu_count() or 4
+                    threads = min(cores, 8)
                     cls._llm_instance = Llama(
                         model_path=str(weights),
-                        n_ctx=2048,
-                        n_threads=4,
+                        n_ctx=3072,
+                        n_threads=threads,
+                        n_batch=512,
                         verbose=False
                     )
             except Exception as e:
@@ -192,56 +196,151 @@ class AutonomousSiteBuilder:
         return None
 
     @classmethod
-    def query_qwen_for_code(cls, prompt: str, attachments_text: str = "") -> Optional[Dict[str, Any]]:
+    def _derive_file_description(cls, file_name: str, prompt: str, content: str, is_update: bool = False) -> str:
+        """Derives a bespoke, dynamic file description based on the prompt and actual code content."""
+        key = file_name.lower()
+        p = prompt.lower()
+        c = content.lower()
+
+        if "html" in key:
+            if "form" in p or "<form" in c:
+                return "Structured semantic form with accessible input fields, submit controls, and validation elements."
+            elif "calc" in p or "calculator" in c:
+                return "Interactive calculator layout with numerical keypad grid and live expression display."
+            elif "dash" in p or "table" in p or "<table" in c:
+                return "Responsive dashboard architecture with data telemetry tables and metric card widgets."
+            elif "login" in p or "auth" in p or "password" in c:
+                return "Secure authentication layout with input validation styling and action buttons."
+            elif "ecom" in p or "shop" in p or "product" in c:
+                return "Product catalog grid with showcase cards, pricing tiers, and cart interaction containers."
+            elif "portfolio" in p or "personal" in p:
+                return "Curated developer portfolio structure with hero presentation, project showcase, and contact section."
+            elif is_update:
+                return f"Updated HTML structure incorporating requested layout adjustments for '{prompt[:32]}'."
+            else:
+                return "Semantic, accessible HTML5 document tree structured with modern responsive containers."
+
+        elif "css" in key:
+            if "dark" in p or "#0" in c or "#1" in c:
+                return "Bespoke dark-mode styling with custom CSS variables, subtle depth elevations, and hover states."
+            elif "light" in p or "lavender" in p or "#f" in c:
+                return "Clean, modern light aesthetic featuring refined typography, fluid spacing, and smooth transitions."
+            elif "glass" in p or "blur" in c:
+                return "Modern frosted glassmorphism stylesheet with backdrop filters and translucent borders."
+            elif is_update:
+                return f"Refined CSS rules applying updated styling, typography, and color tokens for '{prompt[:32]}'."
+            else:
+                return "Responsive stylesheet with mobile-first media queries, CSS variables, and micro-interaction states."
+
+        elif "js" in key:
+            if "calc" in p or "eval" in c or "math" in c:
+                return "Stateful mathematical evaluation engine handling button keypresses and display updates."
+            elif "form" in p or "submit" in c or "preventdefault" in c:
+                return "Client-side form handler managing real-time field validation, input sanitization, and submit feedback."
+            elif "filter" in p or "search" in p or "sort" in c:
+                return "Dynamic search and filter engine with real-time DOM filtering and active state management."
+            elif is_update:
+                return f"Updated JavaScript logic managing dynamic UI events and interactive state for '{prompt[:32]}'."
+            else:
+                return "Client interactivity engine managing event bindings, responsive navigation, and DOM state."
+
+        return f"Component source file for {file_name}."
+
+    @classmethod
+    def query_qwen_for_code(
+        cls,
+        prompt: str,
+        attachments_text: str = "",
+        existing_files: Optional[List[Dict[str, Any]]] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Queries local Qwen2.5-Coder-3B to generate complete, tailored HTML, CSS, JS code
         specifically matching the user's requirements (e.g. form, calculator, landing page, app).
+        Supports incremental modification of existing codebase if existing_files is provided.
         """
         llm = cls.get_qwen_model()
         if not llm:
             return None
         try:
-            system_prompt = (
-                "You are an elite autonomous web developer and UI engineer powered by Qwen2.5-Coder. "
-                "Write high-quality, modern, accessible, beautiful code tailored EXACTLY to the user's request. "
-                "If the user asks for a specific component (e.g. form, calculator, table, login, dashboard) or a full page, "
-                "build what they asked for directly with clean semantic HTML5, modern CSS, and interactive JavaScript.\n"
-                "Output your response strictly using these code blocks:\n"
-                "```html\n"
-                "<!DOCTYPE html>\n"
-                "<html lang=\"en\">\n"
-                "<head>\n"
-                "  <meta charset=\"UTF-8\" />\n"
-                "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
-                "  <title>...</title>\n"
-                "  <link rel=\"stylesheet\" href=\"styles.css\" />\n"
-                "  <script defer src=\"script.js\"></script>\n"
-                "</head>\n"
-                "<body>\n"
-                "...\n"
-                "</body>\n"
-                "</html>\n"
-                "```\n"
-                "```css\n"
-                "/* styles.css */\n"
-                "...\n"
-                "```\n"
-                "```js\n"
-                "/* script.js */\n"
-                "...\n"
-                "```\n"
-                "Followed by a concise 1-2 sentence explanation of what you created."
-            )
-            user_msg = f"User Request: {prompt}"
-            if attachments_text:
-                user_msg += f"\nAdditional Context:\n{attachments_text}"
+            is_update = bool(existing_files and len(existing_files) > 0)
+            if is_update:
+                files_context = ""
+                for ef in existing_files:
+                    fname = ef.get("name") or ef.get("id") or "file"
+                    fcontent = ef.get("content", "")
+                    flang = ef.get("lang") or ("css" if fname.endswith(".css") else ("js" if fname.endswith(".js") else "html"))
+                    files_context += f"\n```{flang} {fname}\n{fcontent}\n```\n"
+
+                system_prompt = (
+                    "You are an elite autonomous web developer and UI engineer powered by Qwen2.5-Coder. "
+                    "The user wants to MODIFY an existing project codebase. "
+                    "Preserve the existing design, architecture, and working code while directly applying the user's requested modifications. "
+                    "Output your complete updated response strictly using these code blocks:\n"
+                    "```html\n"
+                    "<!DOCTYPE html>\n"
+                    "...\n"
+                    "```\n"
+                    "```css\n"
+                    "/* styles.css */\n"
+                    "...\n"
+                    "```\n"
+                    "```js\n"
+                    "/* script.js */\n"
+                    "...\n"
+                    "```\n"
+                    "Followed by a concise 1-2 sentence explanation of the changes made, and bullet points describing what was updated in each file:\n"
+                    "- `index.html`: <what was updated in HTML>\n"
+                    "- `styles.css`: <what was updated in CSS>\n"
+                    "- `script.js`: <what was updated in JS>"
+                )
+                user_msg = f"User Modification Request: {prompt}\n\nCurrent Codebase:\n{files_context}"
+                if attachments_text:
+                    user_msg += f"\nAdditional Context:\n{attachments_text}"
+            else:
+                system_prompt = (
+                    "You are an elite autonomous web developer and UI engineer powered by Qwen2.5-Coder. "
+                    "Write high-quality, modern, accessible, beautiful code tailored EXACTLY to the user's request. "
+                    "If the user asks for a specific component (e.g. form, calculator, table, login, dashboard) or a full page, "
+                    "build what they asked for directly with clean semantic HTML5, modern CSS, and interactive JavaScript.\n"
+                    "Output your response strictly using these code blocks:\n"
+                    "```html\n"
+                    "<!DOCTYPE html>\n"
+                    "<html lang=\"en\">\n"
+                    "<head>\n"
+                    "  <meta charset=\"UTF-8\" />\n"
+                    "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
+                    "  <title>...</title>\n"
+                    "  <link rel=\"stylesheet\" href=\"styles.css\" />\n"
+                    "  <script defer src=\"script.js\"></script>\n"
+                    "</head>\n"
+                    "<body>\n"
+                    "...\n"
+                    "</body>\n"
+                    "</html>\n"
+                    "```\n"
+                    "```css\n"
+                    "/* styles.css */\n"
+                    "...\n"
+                    "```\n"
+                    "```js\n"
+                    "/* script.js */\n"
+                    "...\n"
+                    "```\n"
+                    "Followed by a concise 1-2 sentence explanation of what you created, and bullet points describing each generated file:\n"
+                    "- `index.html`: <concise summary of what this specific HTML contains>\n"
+                    "- `styles.css`: <concise summary of what this specific CSS styles>\n"
+                    "- `script.js`: <concise summary of what this specific JS does>"
+                )
+                user_msg = f"User Request: {prompt}"
+                if attachments_text:
+                    user_msg += f"\nAdditional Context:\n{attachments_text}"
 
             res = llm.create_chat_completion(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_msg}
                 ],
-                max_tokens=950,
+                max_tokens=900,
                 temperature=0.3
             )
             raw = res["choices"][0]["message"]["content"]
@@ -268,8 +367,17 @@ class AutonomousSiteBuilder:
                 if script_match and 'src=' not in script_match.group(0).lower():
                     js_code = script_match.group(1).strip()
 
+            # Parse file descriptions from bullet points if Qwen provided them
+            file_descs = {}
+            for line in raw.split("\n"):
+                bullet_m = re.match(r"^[-*]\s*`?([a-zA-Z0-9_.-]+)`?:\s*(.+)$", line.strip())
+                if bullet_m:
+                    fname = bullet_m.group(1).lower()
+                    desc = bullet_m.group(2).strip()
+                    file_descs[fname] = desc
+
             clean_text = re.sub(r"```[\s\S]*?```", "", raw).strip()
-            explanation = clean_text if clean_text else "Custom code synthesized by Orn\u00e0 2.5 Coder to match your exact specification."
+            explanation = clean_text if clean_text else ("Updated codebase applying your requested modifications." if is_update else "Custom code synthesized by Orn\u00e0 2.5 Coder to match your exact specification.")
 
             if html_code:
                 # Ensure HTML links to styles.css and script.js
@@ -286,7 +394,9 @@ class AutonomousSiteBuilder:
                     "html": html_code,
                     "css": css_code or "/* Custom styles for this project */\nbody { font-family: system-ui, sans-serif; }",
                     "js": js_code or "// Interactive functionality\nconsole.log('App initialized');",
-                    "explanation": explanation
+                    "explanation": explanation,
+                    "file_descs": file_descs,
+                    "is_update": is_update
                 }
         except Exception as e:
             print(f"[AutonomousSiteBuilder] Qwen code query exception: {e}")
@@ -298,17 +408,21 @@ class AutonomousSiteBuilder:
         prompt: str,
         attachments: Optional[List[Dict[str, Any]]] = None,
         project_name: Optional[str] = None,
-        model: str = "qwen"
+        model: str = "qwen",
+        existing_files: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
-        Synthesizes the complete 3-file site: index.html, styles.css, script.js,
+        Synthesizes the complete site bundle (index.html, styles.css, script.js),
         accompanied by an architectural explanation and project persistence.
-        Uses actual Qwen 2.5 Coder neural generation when selected.
+        Supports both Ornà 2.5 Coder and Ornà 2.5 (Instant).
+        Supports incremental modification when existing_files are supplied.
         """
         palette = cls.detect_palette(prompt)
         brand, title, subtitle = cls.derive_brand_and_title(prompt)
         qwen_code_result = None
-        model_name = "Orn\u00e0ment Instant Synthesizer"
+        is_instant = model and model.lower() in ["instant", "fast"]
+        is_update = bool(existing_files and len(existing_files) > 0)
+        model_name = "Orn\u00e0 2.5 (Instant)" if is_instant else "Orn\u00e0 2.5 Coder (Neural 3B)"
 
         # Incorporate attachments context if provided
         attachment_notes = ""
@@ -320,9 +434,9 @@ class AutonomousSiteBuilder:
                     attachment_notes += f"\n<!-- Attached context: {c} -->"
                     attachment_text += f"{c}\n"
 
-        # Query Qwen 2.5 Coder for ACTUAL code if requested
-        if model and model.lower() in ["qwen", "qwen2.5", "neural"]:
-            qwen_code_result = cls.query_qwen_for_code(prompt, attachment_text)
+        # Query Qwen 2.5 Coder for ACTUAL code if requested and not instant
+        if not is_instant:
+            qwen_code_result = cls.query_qwen_for_code(prompt, attachment_text, existing_files=existing_files)
             if qwen_code_result:
                 model_name = "Orn\u00e0 2.5 Coder (Neural 3B)"
 
@@ -335,38 +449,77 @@ class AutonomousSiteBuilder:
             html_content = qwen_code_result["html"]
             css_content = qwen_code_result["css"]
             js_content = qwen_code_result["js"]
+            file_descs = qwen_code_result.get("file_descs") or {}
+
+            html_desc = file_descs.get("index.html") or cls._derive_file_description("index.html", prompt, html_content, is_update=is_update)
+            css_desc = file_descs.get("styles.css") or cls._derive_file_description("styles.css", prompt, css_content, is_update=is_update)
+            js_desc = file_descs.get("script.js") or cls._derive_file_description("script.js", prompt, js_content, is_update=is_update)
+
             explanation = (
-                f"Generated with **{model_name}** tailored specifically to your request.\n\n"
+                f"{'Updated' if is_update else 'Generated'} with **{model_name}** tailored specifically to your request.\n\n"
                 f"{qwen_code_result['explanation']}\n\n"
-                f"- `index.html`: Production-ready markup structured specifically for your prompt.\n"
-                f"- `styles.css`: Bespoke modern styling, responsive layout, and visual refinements.\n"
-                f"- `script.js`: Interactive behavior and client logic."
+                f"- `index.html`: {html_desc}\n"
+                f"- `styles.css`: {css_desc}\n"
+                f"- `script.js`: {js_desc}"
             )
         else:
-            # Fallback to deterministic design system generator
-            html_content = cls._build_html(
-                brand=brand,
-                title=title,
-                subtitle=subtitle,
-                palette=palette,
-                prompt=prompt,
-                attachment_notes=attachment_notes,
-                features=None,
-                model_name=model_name
-            )
-            css_content = cls._build_css(palette)
-            js_content = cls._build_js(brand)
+            # Deterministic / Instant generator (Ornà 2.5 Instant)
+            if is_update and existing_files:
+                # Incremental modification of existing files for instant model
+                existing_html = next((f["content"] for f in existing_files if f.get("name") == "index.html" or f.get("id") == "html"), "")
+                existing_css = next((f["content"] for f in existing_files if f.get("name") == "styles.css" or f.get("id") == "css"), "")
+                existing_js = next((f["content"] for f in existing_files if f.get("name") == "script.js" or f.get("id") == "js"), "")
+
+                # If existing HTML exists, adapt it
+                if existing_html:
+                    html_content = existing_html
+                    # If user requested new elements (e.g. form, button, input)
+                    p_lower = prompt.lower()
+                    if "button" in p_lower and "<button" not in html_content:
+                        html_content = html_content.replace("</body>", "  <div class=\"cta-wrap\"><button class=\"btn btn-primary\">Action</button></div>\n</body>")
+                    if "input" in p_lower or "form" in p_lower:
+                        if "<form" not in html_content:
+                            html_content = html_content.replace("</body>", "  <section class=\"extra-section\"><form class=\"contact-form\"><input type=\"text\" placeholder=\"Enter your input...\" /><button type=\"submit\" class=\"btn btn-primary\">Submit</button></form></section>\n</body>")
+
+                    # Adapt CSS with new palette if requested
+                    css_content = existing_css or cls._build_css(palette)
+                    js_content = existing_js or cls._build_js(brand)
+                else:
+                    html_content = cls._build_html(
+                        brand=brand, title=title, subtitle=subtitle, palette=palette,
+                        prompt=prompt, attachment_notes=attachment_notes, features=None, model_name=model_name
+                    )
+                    css_content = cls._build_css(palette)
+                    js_content = cls._build_js(brand)
+            else:
+                html_content = cls._build_html(
+                    brand=brand,
+                    title=title,
+                    subtitle=subtitle,
+                    palette=palette,
+                    prompt=prompt,
+                    attachment_notes=attachment_notes,
+                    features=None,
+                    model_name=model_name
+                )
+                css_content = cls._build_css(palette)
+                js_content = cls._build_js(brand)
+
+            html_desc = cls._derive_file_description("index.html", prompt, html_content, is_update=is_update)
+            css_desc = cls._derive_file_description("styles.css", prompt, css_content, is_update=is_update)
+            js_desc = cls._derive_file_description("script.js", prompt, js_content, is_update=is_update)
+
             explanation = (
-                f"Synthesized with **{model_name}** for **{brand}** applying the **60-30-10** design system rule with the **{palette['name']}** color theme.\n\n"
-                f"- `index.html`: Responsive HTML5 markup with interactive sections and modern hierarchy.\n"
-                f"- `styles.css`: Modern CSS with custom properties, fluid clamp() typography, and mobile breakpoints.\n"
-                f"- `script.js`: Client-side interactivity including smooth anchor scrolling and form notifications."
+                f"{'Updated' if is_update else 'Synthesized'} with **{model_name}** for **{brand}** applying the **60-30-10** design system rule with the **{palette['name']}** color theme.\n\n"
+                f"- `index.html`: {html_desc}\n"
+                f"- `styles.css`: {css_desc}\n"
+                f"- `script.js`: {js_desc}"
             )
 
         files = [
-            {"id": "html", "name": "index.html", "lang": "html", "content": html_content},
-            {"id": "css", "name": "styles.css", "lang": "css", "content": css_content},
-            {"id": "js", "name": "script.js", "lang": "js", "content": js_content}
+            {"id": "html", "name": "index.html", "lang": "html", "content": html_content, "description": html_desc},
+            {"id": "css", "name": "styles.css", "lang": "css", "content": css_content, "description": css_desc},
+            {"id": "js", "name": "script.js", "lang": "js", "content": js_content, "description": js_desc}
         ]
 
         # Save to workspace for persistence & preview server
@@ -390,10 +543,9 @@ class AutonomousSiteBuilder:
         # Create Git checkpoint
         try:
             git_mgr = GitCheckpointManager(p_dir)
-            git_mgr.create_checkpoint(f"Generated {project_name}: {prompt[:40]}", agent_id="studio_synthesizer")
+            git_mgr.create_checkpoint(f"{'Updated' if is_update else 'Generated'} {project_name}: {prompt[:40]}", agent_id="studio_synthesizer")
         except Exception:
             pass
-
 
         return {
             "status": "success",

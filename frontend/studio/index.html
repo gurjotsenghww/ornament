@@ -1041,6 +1041,30 @@
         border: 1px solid #fde68a;
     }
 
+    .exp-badge-py, .exp-badge-python {
+        background: #e0f2fe;
+        color: #0284c7;
+        border: 1px solid #bae6fd;
+    }
+
+    .exp-badge-ts, .exp-badge-typescript {
+        background: #ede9fe;
+        color: #7c3aed;
+        border: 1px solid #ddd6fe;
+    }
+
+    .exp-badge-json {
+        background: #f3e8ff;
+        color: #9333ea;
+        border: 1px solid #e9d5ff;
+    }
+
+    .exp-file-badge {
+        background: #f3f4f6;
+        color: #4b5563;
+        border: 1px solid #e5e7eb;
+    }
+
     .exp-file-name {
         font-size: 12.5px;
         font-weight: 600;
@@ -1577,6 +1601,35 @@
         </div>
     </div>
 
+    <!-- ============ DELETE CHAT CONFIRMATION MODAL ============ -->
+    <div id="deleteChatModal" style="display:none; position:fixed; inset:0; z-index:9100; background:rgba(0,0,0,0.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:20px; padding:28px 24px; width:100%; max-width:400px; box-shadow:0 24px 60px rgba(0,0,0,0.2); position:relative; margin:20px; box-sizing:border-box;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <div style="width:40px;height:40px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;color:#ef4444;flex-shrink:0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                        <path d="M10 11v6"></path>
+                        <path d="M14 11v6"></path>
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 style="font-size:17px;font-weight:700;letter-spacing:-0.3px;margin:0;color:#111;">Delete chat?</h2>
+                    <p id="deleteChatTitlePreview" style="font-size:12px;color:#9ca3af;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;"></p>
+                </div>
+            </div>
+            <p style="font-size:13px;color:#6b7280;line-height:1.5;margin:0 0 22px;">This will permanently remove this conversation and its synthesized code files. This action cannot be undone.</p>
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;">
+                <button id="cancelDeleteChatBtn" type="button" style="padding:10px 18px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;">
+                    Cancel
+                </button>
+                <button id="confirmDeleteChatBtn" type="button" style="padding:10px 20px;background:#ef4444;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;box-shadow:0 2px 8px rgba(239,68,68,0.3);">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- ============ MAIN ============ -->
     <main class="main">
@@ -2090,8 +2143,9 @@
     /* ============ CHAT HISTORY (Recent Chats) ============ */
     const chatHistoryListEl = document.getElementById('chatHistoryList');
     const createNavItem = document.getElementById('createNavItem');
-    let chatSessions = [];   // { id, title, hasModelTitle, userRenamed, html }
+    let chatSessions = [];   // { id, title, hasModelTitle, userRenamed, html, generatedFiles }
     let currentChatId = null;
+    let currentSessionGeneratedFiles = null;
 
     function genChatId() {
         return 'chat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
@@ -2146,7 +2200,8 @@
             title: title,
             hasModelTitle: existing ? !!existing.hasModelTitle : false,
             userRenamed: existing ? !!existing.userRenamed : false,
-            html: chatMessagesEl.innerHTML
+            html: chatMessagesEl.innerHTML,
+            generatedFiles: currentSessionGeneratedFiles
         };
         const idx = chatSessions.findIndex(c => c.id === currentChatId);
         if (idx >= 0) chatSessions[idx] = { ...chatSessions[idx], ...snapshot };
@@ -2155,11 +2210,52 @@
         renderChatHistory();
     }
 
+    let pendingDeleteChatId = null;
+    const deleteChatModal = document.getElementById('deleteChatModal');
+    const cancelDeleteChatBtn = document.getElementById('cancelDeleteChatBtn');
+    const confirmDeleteChatBtn = document.getElementById('confirmDeleteChatBtn');
+    const deleteChatTitlePreview = document.getElementById('deleteChatTitlePreview');
+
+    function promptDeleteChat(id) {
+        pendingDeleteChatId = id;
+        const chat = chatSessions.find(c => c.id === id);
+        if (deleteChatTitlePreview && chat) {
+            deleteChatTitlePreview.textContent = `"${chat.title}"`;
+        }
+        if (deleteChatModal) deleteChatModal.style.display = 'flex';
+    }
+
+    function closeDeleteChatModal() {
+        if (deleteChatModal) deleteChatModal.style.display = 'none';
+        pendingDeleteChatId = null;
+    }
+
+    if (cancelDeleteChatBtn) cancelDeleteChatBtn.addEventListener('click', closeDeleteChatModal);
+    if (confirmDeleteChatBtn) {
+        confirmDeleteChatBtn.addEventListener('click', () => {
+            if (pendingDeleteChatId) {
+                deleteChat(pendingDeleteChatId);
+            }
+            closeDeleteChatModal();
+        });
+    }
+    if (deleteChatModal) {
+        deleteChatModal.addEventListener('click', (e) => {
+            if (e.target === deleteChatModal) closeDeleteChatModal();
+        });
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && deleteChatModal && deleteChatModal.style.display === 'flex') {
+            closeDeleteChatModal();
+        }
+    });
+
     function deleteChat(id) {
         chatSessions = chatSessions.filter(c => c.id !== id);
         try { localStorage.setItem('ornament_chat_sessions', JSON.stringify(chatSessions)); } catch {}
         if (currentChatId === id) {
             currentChatId = null;
+            currentSessionGeneratedFiles = null;
             chatMessagesEl.innerHTML = '';
             document.body.classList.remove('chat-mode');
             setActiveNavToCreate(true);
@@ -2182,6 +2278,7 @@
     function startNewChat() {
         saveCurrentChat();
         currentChatId = null;
+        currentSessionGeneratedFiles = null;
         chatMessagesEl.innerHTML = '';
         document.body.classList.remove('chat-mode');
         promptInput.value = '';
@@ -2199,6 +2296,7 @@
         const chat = chatSessions.find(c => c.id === id);
         if (!chat) return;
         currentChatId = id;
+        currentSessionGeneratedFiles = chat.generatedFiles || null;
         chatMessagesEl.innerHTML = chat.html;
         document.body.classList.add('chat-mode');
         setActiveNavToCreate(false);
@@ -2237,7 +2335,7 @@
             btn.addEventListener('click', (e) => { e.stopPropagation(); renameChat(btn.dataset.renameId); });
         });
         chatHistoryListEl.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => { e.stopPropagation(); deleteChat(btn.dataset.deleteId); });
+            btn.addEventListener('click', (e) => { e.stopPropagation(); promptDeleteChat(btn.dataset.deleteId); });
         });
     }
 
@@ -2837,10 +2935,11 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
 
         const fileCardsHtml = filesList.map(f => {
             const key = (f.name || '').toLowerCase();
-            let desc = fileNotes[key] || (f.id && fileNotes[f.id]) || defaultDescriptions[key] || 'Component source file.';
+            let desc = f.description || fileNotes[key] || (f.id && fileNotes[f.id]) || defaultDescriptions[key] || 'Production component source file.';
             desc = formatMarkdownMini(desc);
-            const lang = (f.lang || (key.endsWith('.css') ? 'css' : (key.endsWith('.js') ? 'js' : 'html'))).toLowerCase();
-            const badgeLabel = lang === 'javascript' ? 'JS' : lang.toUpperCase();
+            const ext = key.includes('.') ? key.split('.').pop() : 'code';
+            const lang = (f.lang || ext).toLowerCase();
+            const badgeLabel = lang === 'javascript' ? 'JS' : (lang === 'typescript' ? 'TS' : (lang === 'python' ? 'PY' : lang.toUpperCase()));
 
             return `
                 <div class="exp-file-card">
@@ -3196,13 +3295,18 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
                 body: JSON.stringify({
                     prompt: userPrompt,
                     attachments: attachmentsData,
-                    model: currentSelectedModel
+                    model: currentSelectedModel,
+                    existing_files: currentSessionGeneratedFiles
                 })
             });
 
             if (!res.ok) throw new Error('API status ' + res.status);
             const data = await res.json();
             clearInterval(stepTimer);
+
+            if (data.files && data.files.length) {
+                currentSessionGeneratedFiles = data.files;
+            }
 
             updateActivityPanel(panel, flow, flow.items.length - 1);
             setTimeout(() => {
@@ -3220,6 +3324,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
             console.warn('Backend unavailable, using client fallback:', err);
             clearInterval(stepTimer);
             const fallbackFiles = generateLandingPageFiles();
+            currentSessionGeneratedFiles = fallbackFiles;
             const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
             finalizeActivityPanel(panel, flow, elapsed);
             const explorer = buildCodeExplorer(fallbackFiles, 'landing-page');
