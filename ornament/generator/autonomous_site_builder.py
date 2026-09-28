@@ -140,7 +140,7 @@ class AutonomousSiteBuilder:
                     threads = min(cores, 8)
                     cls._llm_instance = Llama(
                         model_path=str(weights),
-                        n_ctx=3072,
+                        n_ctx=8192,
                         n_threads=threads,
                         n_batch=512,
                         verbose=False
@@ -314,7 +314,15 @@ class AutonomousSiteBuilder:
                                 "all_files": fmap
                             }
             except Exception as e:
-                print(f"[*] Cloud model check/call failed ({e}), falling back to local neural model.")
+                err_str = str(e)
+                print(f"[*] Cloud model check/call failed ({err_str}), falling back to local neural model.")
+                if "530" in err_str or "refused" in err_str or "timed out" in err_str:
+                    try:
+                        cloud_file = settings.workspace_dir.parent / ".ornament" / "cloud_url.txt"
+                        if cloud_file.exists():
+                            cloud_file.unlink()
+                    except Exception:
+                        pass
 
         # 2. Local neural model fallback
         llm = cls.get_qwen_model()
@@ -327,6 +335,9 @@ class AutonomousSiteBuilder:
                 for ef in existing_files:
                     fname = ef.get("name") or ef.get("id") or "file"
                     fcontent = ef.get("content", "")
+                    # Cap large files at 2500 chars to strictly stay within context limits
+                    if len(fcontent) > 2500:
+                        fcontent = fcontent[:2500] + "\n/* ... truncated for context window ... */"
                     flang = ef.get("lang") or ("css" if fname.endswith(".css") else ("js" if fname.endswith(".js") else "html"))
                     files_context += f"\n```{flang} {fname}\n{fcontent}\n```\n"
 
