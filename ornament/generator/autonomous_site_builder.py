@@ -251,12 +251,14 @@ class AutonomousSiteBuilder:
         cls,
         prompt: str,
         attachments_text: str = "",
-        existing_files: Optional[List[Dict[str, Any]]] = None
+        existing_files: Optional[List[Dict[str, Any]]] = None,
+        fast_mode: bool = False
     ) -> Optional[Dict[str, Any]]:
         """
         Queries local Qwen2.5-Coder-3B to generate complete, tailored HTML, CSS, JS code
         specifically matching the user's requirements (e.g. form, calculator, landing page, app).
         Supports incremental modification of existing codebase if existing_files is provided.
+        Supports fast_mode (greedy sampling, concise output) for Ornà 2.5 (Instant).
         """
         llm = cls.get_qwen_model()
         if not llm:
@@ -272,9 +274,9 @@ class AutonomousSiteBuilder:
                     files_context += f"\n```{flang} {fname}\n{fcontent}\n```\n"
 
                 system_prompt = (
-                    "You are an elite autonomous web developer and UI engineer powered by Qwen2.5-Coder. "
+                    f"You are {'Ornà 2.5 (Instant)' if fast_mode else 'Ornà 2.5 Coder (Neural 3B)'}, an elite autonomous web developer powered by Qwen2.5-Coder. "
                     "The user wants to MODIFY an existing project codebase. "
-                    "Preserve the existing design, architecture, and working code while directly applying the user's requested modifications. "
+                    "Preserve the existing working design, structure, and functionality while directly applying the user's requested modifications. "
                     "Output your complete updated response strictly using these code blocks:\n"
                     "```html\n"
                     "<!DOCTYPE html>\n"
@@ -297,51 +299,89 @@ class AutonomousSiteBuilder:
                 if attachments_text:
                     user_msg += f"\nAdditional Context:\n{attachments_text}"
             else:
-                system_prompt = (
-                    "You are an elite autonomous web developer and UI engineer powered by Qwen2.5-Coder. "
-                    "Write high-quality, modern, accessible, beautiful code tailored EXACTLY to the user's request. "
-                    "If the user asks for a specific component (e.g. form, calculator, table, login, dashboard) or a full page, "
-                    "build what they asked for directly with clean semantic HTML5, modern CSS, and interactive JavaScript.\n"
-                    "Output your response strictly using these code blocks:\n"
-                    "```html\n"
-                    "<!DOCTYPE html>\n"
-                    "<html lang=\"en\">\n"
-                    "<head>\n"
-                    "  <meta charset=\"UTF-8\" />\n"
-                    "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
-                    "  <title>...</title>\n"
-                    "  <link rel=\"stylesheet\" href=\"styles.css\" />\n"
-                    "  <script defer src=\"script.js\"></script>\n"
-                    "</head>\n"
-                    "<body>\n"
-                    "...\n"
-                    "</body>\n"
-                    "</html>\n"
-                    "```\n"
-                    "```css\n"
-                    "/* styles.css */\n"
-                    "...\n"
-                    "```\n"
-                    "```js\n"
-                    "/* script.js */\n"
-                    "...\n"
-                    "```\n"
-                    "Followed by a concise 1-2 sentence explanation of what you created, and bullet points describing each generated file:\n"
-                    "- `index.html`: <concise summary of what this specific HTML contains>\n"
-                    "- `styles.css`: <concise summary of what this specific CSS styles>\n"
-                    "- `script.js`: <concise summary of what this specific JS does>"
-                )
+                if fast_mode:
+                    system_prompt = (
+                        "You are Ornà 2.5 (Instant), a rapid autonomous code synthesizer powered by Qwen2.5-Coder. "
+                        "Synthesize clean, functional, modern HTML5, CSS, and JavaScript tailored EXACTLY to the user's request. "
+                        "Build the requested component or interface directly and concisely.\n"
+                        "Output strictly using these code blocks:\n"
+                        "```html\n"
+                        "<!DOCTYPE html>\n"
+                        "<html lang=\"en\">\n"
+                        "<head>\n"
+                        "  <meta charset=\"UTF-8\" />\n"
+                        "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
+                        "  <title>App</title>\n"
+                        "  <link rel=\"stylesheet\" href=\"styles.css\" />\n"
+                        "  <script defer src=\"script.js\"></script>\n"
+                        "</head>\n"
+                        "<body>\n"
+                        "...\n"
+                        "</body>\n"
+                        "</html>\n"
+                        "```\n"
+                        "```css\n"
+                        "/* styles.css */\n"
+                        "...\n"
+                        "```\n"
+                        "```js\n"
+                        "/* script.js */\n"
+                        "...\n"
+                        "```\n"
+                        "Followed by bullet points:\n"
+                        "- `index.html`: <concise summary>\n"
+                        "- `styles.css`: <concise summary>\n"
+                        "- `script.js`: <concise summary>"
+                    )
+                else:
+                    system_prompt = (
+                        "You are Ornà 2.5 Coder (Neural 3B), an elite autonomous web developer and UI engineer powered by Qwen2.5-Coder. "
+                        "Write high-quality, modern, accessible, beautiful code tailored EXACTLY to the user's request. "
+                        "If the user asks for a specific component (e.g. form, calculator, table, login, dashboard) or a full page, "
+                        "build what they asked for directly with clean semantic HTML5, modern CSS, and interactive JavaScript.\n"
+                        "Output your response strictly using these code blocks:\n"
+                        "```html\n"
+                        "<!DOCTYPE html>\n"
+                        "<html lang=\"en\">\n"
+                        "<head>\n"
+                        "  <meta charset=\"UTF-8\" />\n"
+                        "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
+                        "  <title>...</title>\n"
+                        "  <link rel=\"stylesheet\" href=\"styles.css\" />\n"
+                        "  <script defer src=\"script.js\"></script>\n"
+                        "</head>\n"
+                        "<body>\n"
+                        "...\n"
+                        "</body>\n"
+                        "</html>\n"
+                        "```\n"
+                        "```css\n"
+                        "/* styles.css */\n"
+                        "...\n"
+                        "```\n"
+                        "```js\n"
+                        "/* script.js */\n"
+                        "...\n"
+                        "```\n"
+                        "Followed by a concise 1-2 sentence explanation of what you created, and bullet points describing each generated file:\n"
+                        "- `index.html`: <concise summary of what this specific HTML contains>\n"
+                        "- `styles.css`: <concise summary of what this specific CSS styles>\n"
+                        "- `script.js`: <concise summary of what this specific JS does>"
+                    )
                 user_msg = f"User Request: {prompt}"
                 if attachments_text:
                     user_msg += f"\nAdditional Context:\n{attachments_text}"
+
+            token_limit = 450 if fast_mode else 950
+            temp = 0.1 if fast_mode else 0.3
 
             res = llm.create_chat_completion(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_msg}
                 ],
-                max_tokens=900,
-                temperature=0.3
+                max_tokens=token_limit,
+                temperature=temp
             )
             raw = res["choices"][0]["message"]["content"]
 
@@ -356,6 +396,21 @@ class AutonomousSiteBuilder:
             # Extract JS block
             js_match = re.search(r"```(?:js|javascript)\s*([\s\S]*?)```", raw, re.IGNORECASE)
             js_code = js_match.group(1).strip() if js_match else ""
+
+            # Robust fallback HTML extraction if code fence tags were not strictly ```html
+            if not html_code:
+                generic_m = re.search(r"```(?:\w+)?\s*(<!DOCTYPE[\s\S]*?|<html[\s\S]*?)```", raw, re.IGNORECASE)
+                if generic_m:
+                    html_code = generic_m.group(1).strip()
+            if not html_code:
+                doc_m = re.search(r"(<!DOCTYPE\s+html[\s\S]*?</html>|<html[\s\S]*?</html>)", raw, re.IGNORECASE)
+                if doc_m:
+                    html_code = doc_m.group(1).strip()
+            if not html_code:
+                body_m = re.search(r"(<(?:div|form|section|main|header|nav|button|table|canvas)[\s\S]*</(?:div|form|section|main|header|nav|button|table|canvas)>)", raw, re.IGNORECASE)
+                if body_m:
+                    inner = body_m.group(1).strip()
+                    html_code = f"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n  <title>App</title>\n  <link rel=\"stylesheet\" href=\"styles.css\" />\n  <script defer src=\"script.js\"></script>\n</head>\n<body>\n{inner}\n</body>\n</html>"
 
             # Extract inline style or script if not separated
             if html_code and not css_code:
@@ -377,7 +432,8 @@ class AutonomousSiteBuilder:
                     file_descs[fname] = desc
 
             clean_text = re.sub(r"```[\s\S]*?```", "", raw).strip()
-            explanation = clean_text if clean_text else ("Updated codebase applying your requested modifications." if is_update else "Custom code synthesized by Orn\u00e0 2.5 Coder to match your exact specification.")
+            default_expl = ("Updated codebase applying your requested modifications." if is_update else f"Custom code synthesized by {'Ornà 2.5 (Instant)' if fast_mode else 'Ornà 2.5 Coder'} to match your exact specification.")
+            explanation = clean_text if clean_text else default_expl
 
             if html_code:
                 # Ensure HTML links to styles.css and script.js
@@ -414,7 +470,7 @@ class AutonomousSiteBuilder:
         """
         Synthesizes the complete site bundle (index.html, styles.css, script.js),
         accompanied by an architectural explanation and project persistence.
-        Supports both Ornà 2.5 Coder and Ornà 2.5 (Instant).
+        Supports both Ornà 2.5 Coder and Ornà 2.5 (Instant) with real neural execution.
         Supports incremental modification when existing_files are supplied.
         """
         palette = cls.detect_palette(prompt)
@@ -434,11 +490,15 @@ class AutonomousSiteBuilder:
                     attachment_notes += f"\n<!-- Attached context: {c} -->"
                     attachment_text += f"{c}\n"
 
-        # Query Qwen 2.5 Coder for ACTUAL code if requested and not instant
-        if not is_instant:
-            qwen_code_result = cls.query_qwen_for_code(prompt, attachment_text, existing_files=existing_files)
-            if qwen_code_result:
-                model_name = "Orn\u00e0 2.5 Coder (Neural 3B)"
+        # Query Qwen for ACTUAL code for BOTH models:
+        # Instant model uses fast_mode=True (greedy sampling, max_tokens=450)
+        # Coder model uses fast_mode=False (comprehensive synthesis, max_tokens=950)
+        qwen_code_result = cls.query_qwen_for_code(
+            prompt,
+            attachment_text,
+            existing_files=existing_files,
+            fast_mode=is_instant
+        )
 
         # Sanitize project slug
         if not project_name:

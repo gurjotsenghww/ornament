@@ -3321,16 +3321,26 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
             }, 600);
 
         } catch (err) {
-            console.warn('Backend unavailable, using client fallback:', err);
+            console.error('Synthesis failed:', err);
             clearInterval(stepTimer);
-            const fallbackFiles = generateLandingPageFiles();
-            currentSessionGeneratedFiles = fallbackFiles;
-            const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
-            finalizeActivityPanel(panel, flow, elapsed);
-            const explorer = buildCodeExplorer(fallbackFiles, 'landing-page');
-            const explanation = buildCodeExplanation(fallbackFiles);
-            reply.appendChild(explorer);
-            reply.appendChild(explanation);
+            panel._statusEl.textContent = 'Synthesis interrupted';
+            panel._items.forEach(item => {
+                if (item.dataset.state === 'active') item.dataset.state = 'error';
+            });
+            const errCard = document.createElement('div');
+            errCard.className = 'exp-card';
+            errCard.style.cssText = 'border-left: 3px solid #ef4444; background: #fff5f5; margin-top: 14px; padding: 18px; border-radius: 12px;';
+            errCard.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <div>
+                        <div style="font-size: 13.5px; font-weight: 700; color: #991b1b;">Synthesis could not complete</div>
+                        <div style="font-size: 12.5px; color: #7f1d1d; margin-top: 4px; line-height: 1.4;">${escapeHtml(err.message || 'The server did not respond or local inference was interrupted.')}</div>
+                        <div style="font-size: 11.5px; color: #b91c1c; margin-top: 6px;">Please verify the Ornàment server is running on port 5050 and try again.</div>
+                    </div>
+                </div>
+            `;
+            reply.appendChild(errCard);
             scrollChatToBottom();
             saveCurrentChat();
         }
