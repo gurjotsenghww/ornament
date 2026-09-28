@@ -8,21 +8,10 @@
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Plus+Jakarta+Sans:wght@300..800&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'JetBrains Mono', monospace !important;
-        -webkit-font-smoothing: antialiased;
-    }
-
-    input, button, textarea, select {
-        font-family: 'JetBrains Mono', monospace !important;
-    }
-
     :root {
+        --site-font: 'JetBrains Mono', monospace;
         --sidebar-width: 260px;
         --sidebar-collapsed: 78px;
         --text-main: #111;
@@ -32,6 +21,18 @@
         --hover-bg: #f0f0f0;
         --sidebar-bg: #f9f9fa;
         --transition: 0.25s ease;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: var(--site-font);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    input, button, textarea, select {
+        font-family: var(--site-font) !important;
     }
 
     html, body { height: 100%; height: 100dvh; overflow: hidden; }
@@ -270,7 +271,7 @@
     .hero > .prompt-box { animation-delay: 0.2s; }
 
     h1 {
-        font-family: 'JetBrains Mono', monospace !important;
+        font-family: var(--site-font) !important;
         font-size: 58px; line-height: 1.15; font-weight: 600;
         letter-spacing: -1.5px; margin-bottom: 20px;
         color: #16171a;
@@ -901,7 +902,7 @@
         display: flex;
         flex-direction: column;
         gap: 14px;
-        font-family: 'JetBrains Mono', monospace !important;
+        font-family: var(--site-font) !important;
     }
 
     .exp-card-header {
@@ -1059,6 +1060,50 @@
     .exp-footer strong {
         color: #1f2937;
         font-weight: 600;
+    }
+
+    /* ================= SETTINGS & FONT SELECTOR ================= */
+    .font-option-card {
+        border: 1.5px solid #e5e7eb;
+        background: #fafafa;
+        border-radius: 12px;
+        padding: 12px 14px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        user-select: none;
+    }
+    .font-option-card:hover {
+        border-color: #cbd5e1;
+        background: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .font-option-card.active {
+        border-color: #6366f1;
+        background: #fbfbfe;
+        box-shadow: 0 0 0 1px #6366f1, 0 2px 8px rgba(99,102,241,0.08);
+    }
+    .font-option-card .font-check-circle {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 1.5px solid #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: transparent;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+    }
+    .font-option-card.active .font-check-circle {
+        border-color: #6366f1;
+        background: #6366f1;
+        color: #fff;
     }
 
     /* ================= OVERLAY ================= */
@@ -1336,7 +1381,7 @@
 
         <div class="sidebar-bottom">
             <div class="divider"></div>
-            <a href="#" class="nav-item">
+            <a href="#" class="nav-item" id="settingsNavItem" title="Settings">
                 <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 <span>Settings</span>
             </a>
@@ -1377,6 +1422,40 @@
                 style="margin-top:20px;width:100%;padding:12px;background:#111;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">
                 Save changes
             </button>
+        </div>
+    </div>
+
+    <!-- ============ SETTINGS MODAL ============ -->
+    <div id="settingsModal" style="display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,0.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:20px; padding:28px 24px; width:100%; max-width:540px; box-shadow:0 24px 60px rgba(0,0,0,0.2); position:relative; margin:20px; max-height:90vh; display:flex; flex-direction:column; box-sizing:border-box;">
+            <button id="settingsModalClose" style="position:absolute;top:16px;right:16px;background:transparent;border:none;cursor:pointer;color:#888;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" aria-label="Close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                <div style="width:32px;height:32px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </div>
+                <h2 style="font-size:18px;font-weight:700;letter-spacing:-0.3px;margin:0;">Settings</h2>
+            </div>
+            <p style="font-size:13px;color:#71717a;margin:0 0 18px;">Personalize typography and interface styling across your studio workspace.</p>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <label style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.5px;text-transform:uppercase;">Typography / Font Family</label>
+                <span id="currentFontBadge" style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:#eef2ff;color:#4f46e5;">JetBrains Mono</span>
+            </div>
+
+            <div id="fontOptionsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:10px;overflow-y:auto;max-height:360px;padding-right:2px;margin-bottom:18px;">
+                <!-- Populated dynamically via JS -->
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #f1f5f9;">
+                <button id="resetFontBtn" type="button" style="font-size:13px;color:#6b7280;background:transparent;border:none;cursor:pointer;font-weight:500;padding:6px 10px;border-radius:6px;transition:background 0.15s;">
+                    Reset to Default
+                </button>
+                <button id="closeSettingsDoneBtn" type="button" style="padding:10px 22px;background:#111;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;">
+                    Done
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1593,6 +1672,141 @@
 
     loadAndApplyProfile();
 
+    /* ============ SETTINGS & TYPOGRAPHY ============ */
+    const AVAILABLE_FONTS = [
+        {
+            id: 'jetbrains-mono',
+            name: 'JetBrains Mono',
+            category: 'Monospace (Default)',
+            family: "'JetBrains Mono', monospace",
+            sample: 'function render() { return 42; }'
+        },
+        {
+            id: 'inter',
+            name: 'Inter',
+            category: 'Modern UI Sans',
+            family: "'Inter', sans-serif",
+            sample: 'Designed for high-clarity interfaces'
+        },
+        {
+            id: 'fira-code',
+            name: 'Fira Code',
+            category: 'Programming Mono',
+            family: "'Fira Code', monospace",
+            sample: 'const code = async () => true;'
+        },
+        {
+            id: 'plus-jakarta-sans',
+            name: 'Plus Jakarta Sans',
+            category: 'Geometric Sans',
+            family: "'Plus Jakarta Sans', sans-serif",
+            sample: 'Harmonious layout & clean rhythm'
+        },
+        {
+            id: 'space-grotesk',
+            name: 'Space Grotesk',
+            category: 'Tech Neo-Grotesque',
+            family: "'Space Grotesk', sans-serif",
+            sample: 'Next-gen neural architecture'
+        },
+        {
+            id: 'instrument-serif',
+            name: 'Instrument Serif',
+            category: 'Editorial Serif',
+            family: "'Instrument Serif', Georgia, serif",
+            sample: 'Bespoke elegance & timeless form'
+        }
+    ];
+
+    const settingsModal = document.getElementById('settingsModal');
+    const settingsModalClose = document.getElementById('settingsModalClose');
+    const closeSettingsDoneBtn = document.getElementById('closeSettingsDoneBtn');
+    const resetFontBtn = document.getElementById('resetFontBtn');
+    const fontOptionsGrid = document.getElementById('fontOptionsGrid');
+    const currentFontBadge = document.getElementById('currentFontBadge');
+    const settingsNavItem = document.getElementById('settingsNavItem');
+
+    let currentFontId = 'jetbrains-mono';
+
+    function renderFontOptions(activeId) {
+        if (!fontOptionsGrid) return;
+        fontOptionsGrid.innerHTML = AVAILABLE_FONTS.map(f => {
+            const isActive = f.id === activeId;
+            return `
+                <div class="font-option-card${isActive ? ' active' : ''}" data-font-id="${f.id}" title="Click to use ${escapeHtml(f.name)}">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                        <span style="font-family:${f.family};font-size:14px;font-weight:700;color:#111;">${escapeHtml(f.name)}</span>
+                        <div class="font-check-circle">${isActive ? '✓' : ''}</div>
+                    </div>
+                    <span style="font-size:11px;color:#888;font-weight:500;">${escapeHtml(f.category)}</span>
+                    <span style="font-family:${f.family};font-size:12px;color:#4b5563;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(f.sample)}</span>
+                </div>
+            `;
+        }).join('');
+
+        fontOptionsGrid.querySelectorAll('.font-option-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const fontId = card.getAttribute('data-font-id');
+                applyFont(fontId);
+            });
+        });
+    }
+
+    function applyFont(fontId) {
+        const found = AVAILABLE_FONTS.find(f => f.id === fontId) || AVAILABLE_FONTS[0];
+        currentFontId = found.id;
+        document.documentElement.style.setProperty('--site-font', found.family);
+        try {
+            localStorage.setItem('ornament_selected_font', found.id);
+        } catch (e) {}
+        if (currentFontBadge) {
+            currentFontBadge.textContent = found.name;
+        }
+        renderFontOptions(found.id);
+    }
+
+    function loadAndApplySelectedFont() {
+        let saved = 'jetbrains-mono';
+        try {
+            saved = localStorage.getItem('ornament_selected_font') || 'jetbrains-mono';
+        } catch (e) {}
+        applyFont(saved);
+    }
+
+    function openSettingsModal() {
+        if (!settingsModal) return;
+        renderFontOptions(currentFontId);
+        settingsModal.style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+        if (!settingsModal) return;
+        settingsModal.style.display = 'none';
+    }
+
+    if (settingsNavItem) {
+        settingsNavItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            openSettingsModal();
+        });
+    }
+
+    if (settingsModalClose) settingsModalClose.addEventListener('click', closeSettingsModal);
+    if (closeSettingsDoneBtn) closeSettingsDoneBtn.addEventListener('click', closeSettingsModal);
+    if (resetFontBtn) resetFontBtn.addEventListener('click', () => applyFont('jetbrains-mono'));
+    if (settingsModal) {
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) closeSettingsModal();
+        });
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && settingsModal && settingsModal.style.display === 'flex') {
+            closeSettingsModal();
+        }
+    });
+
+    loadAndApplySelectedFont();
+
     /* ============ SIDEBAR ============ */
     const body = document.body;
     const toggleBtn = document.getElementById('toggleBtn');
@@ -1617,6 +1831,12 @@
 
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', (e) => {
+            if (item.id === 'settingsNavItem') {
+                e.preventDefault();
+                openSettingsModal();
+                if (isMobile()) body.classList.remove('drawer-open');
+                return;
+            }
             e.preventDefault();
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             item.classList.add('active');
